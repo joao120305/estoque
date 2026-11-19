@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2f5d34">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Estoque da Fazenda</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f3f4f1;color:#1d2a1f;font-size:16px}
+header{background:#2f5d34;color:#fff;padding:10px 14px;position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:10px}
+header h1{margin:0;font-size:18px;flex:1}
+header .who{font-size:13px;opacity:.9;text-align:right}
+header button{background:#24492a;color:#fff;border:0;border-radius:6px;padding:6px 10px;font-size:13px;cursor:pointer}
+#sync{font-size:12px;padding:4px 14px;background:#e8efe5;color:#335}
+#sync.off{background:#fbe9d7;color:#7a3b0c}
+nav{display:flex;overflow-x:auto;background:#24492a;position:sticky;top:48px;z-index:5}
+nav button{flex:1;min-width:88px;background:none;border:0;color:#cfe3d1;padding:12px 8px;font-size:15px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.on{color:#fff;border-bottom-color:#9fd36a;font-weight:600}
+main{max-width:920px;margin:0 auto;padding:14px}
+.card{background:#fff;border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+h2{font-size:17px;margin:0 0 10px}
+label{display:block;font-size:13px;color:#555;margin:8px 0 3px}
+input,select,textarea{width:100%;padding:10px;font-size:16px;border:1px solid #c9cfc6;border-radius:7px;background:#fff}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+.btn{background:#2f5d34;color:#fff;border:0;border-radius:7px;padding:11px 16px;font-size:16px;cursor:pointer;margin-top:12px}
+.btn.sec{background:#e4e9e2;color:#1d2a1f}.btn.red{background:#b23b2e}.btn.big{width:100%;padding:16px;font-size:18px}
+.btn.sm{padding:6px 10px;font-size:13px;margin:0}
+.btn:disabled{opacity:.5}
+.seg{display:flex;margin-top:4px}.seg button{flex:1;padding:12px;font-size:16px;border:1px solid #c9cfc6;background:#fff;cursor:pointer}
+.seg button:first-child{border-radius:7px 0 0 7px}.seg button:last-child{border-radius:0 7px 7px 0}
+.seg button.on.ent{background:#2f7d3a;color:#fff;border-color:#2f7d3a}
+.seg button.on.bx{background:#b5562b;color:#fff;border-color:#b5562b}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eceee9;vertical-align:top}
+th{font-size:12px;color:#666;text-transform:uppercase}
+td.n,th.n{text-align:right;white-space:nowrap}
+.low{color:#b23b2e;font-weight:600}
+.tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:12px;font-weight:600}
+.tag.e{background:#dcefdc;color:#24632c}.tag.b{background:#f6e0d3;color:#8a3d17}
+.tag.r{background:#dcefdc;color:#24632c}.tag.d{background:#f6dcd8;color:#8f2a1f}.tag.g{background:#e6e8e3;color:#555}
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.kpi{flex:1;min-width:140px;background:#fff;border-radius:10px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.kpi small{color:#666;font-size:12px;display:block}.kpi b{display:block;font-size:20px;margin:3px 0}
+.pos{color:#24632c}.neg{color:#b23b2e}
+.muted{color:#777;font-size:13px}
+.hide{display:none!important}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1d2a1f;color:#fff;padding:10px 18px;border-radius:20px;opacity:0;transition:.3s;pointer-events:none;z-index:9;max-width:90%;text-align:center}
+#toast.show{opacity:1}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:15px}.chk input{width:auto}
+.scroll{overflow-x:auto}
+#login{max-width:400px;margin:40px auto;padding:14px}
+.item{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px}.item select{flex:3}.item input{flex:1.3}.item .un{width:42px;padding-bottom:12px;font-size:14px;color:#555}
+.est-list .p{display:flex;justify-content:space-between;align-items:center;padding:14px 6px;border-bottom:1px solid #eceee9}
+.est-list .p b{font-size:18px}.est-list .q{font-size:24px;font-weight:700;text-align:right;white-space:nowrap}
+.est-list .cat{background:#e8efe5;padding:6px 8px;font-weight:600;font-size:13px;color:#335;margin-top:8px;border-radius:5px}
+.lic{padding:9px 14px;font-size:14px}.lic.aviso{background:#fff3cd;color:#6b4e00}.lic.venc{background:#f8d7d3;color:#7a1f15;font-weight:600}
+.fz-card .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.chip{border:1px solid #c9cfc6;border-radius:16px;padding:5px 10px;font-size:13px;cursor:pointer;user-select:none;background:#fff}
+.chip.on{background:#2f5d34;color:#fff;border-color:#2f5d34}.st{display:inline-block;padding:3px 9px;border-radius:12px;font-size:12px;font-weight:700}
+.st.a{background:#dcefdc;color:#24632c}.st.w{background:#fff3cd;color:#6b4e00}.st.v{background:#f8d7d3;color:#7a1f15}
+tr.novo td{background:#fff6c9;transition:background 1s}
+.ok{color:#24632c}.wait{color:#9a6a00}.bad{color:#b23b2e}
+.ped{border-left:5px solid #d99a1e}.ped h3{margin:0 0 4px;font-size:16px}
+.ped .it{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0ec}
+.ped .it .nm{flex:2}.ped .it .sd{flex:1;font-size:13px;color:#555;text-align:right}.ped .it input{width:90px;flex:none}
+#pdBadge:not(:empty){background:#d99a1e;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:3px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌱 Estoque da Fazenda</h1>
+  <div class="who" id="who"></div>
+  <button id="btnSair" class="hide" onclick="sair()">Sair</button>
+</header>
+<div id="sync" class="hide"></div>
+<div id="lic" class="hide"></div>
+
+<!-- ================= LOGIN ================= -->
+<section id="login" class="hide">
+  <div class="card">
+    <h2 id="lgT">Entrar</h2>
+    <div id="lgFazBox"><label>Código da fazenda</label><input id="lgFaz" autocapitalize="none" placeholder="ex.: boavista"></div>
+    <label>Usuário</label><input id="lgUser" autocapitalize="none" autocomplete="username" placeholder="ex.: joao">
+    <label>Senha</label><input id="lgPass" type="password" autocomplete="current-password">
+    <button class="btn big" id="lgBtn" onclick="entrar()">Entrar</button>
+    <p class="muted" style="margin-top:16px"><a href="#" id="lgTroca" onclick="trocaPrimeiro();return false" style="font-size:12px;color:#999">Instalação: criar conta de administrador</a></p>
+    <p class="muted" id="lgMsg"></p>
+  </div>
+</section>
+
+<!-- ================= TRATORISTA ================= -->
+<section id="appTrat" class="hide">
+<main>
+  <div id="trOrdens"></div>
+  <div class="card" id="trForm">
+    <h2>🧪 Calda / Baixa de produtos</h2>
+    <div id="trOrdSel" class="hide" style="background:#eef5ea;padding:8px 10px;border-radius:7px;margin-bottom:6px"></div>
+    <label>Talhão</label><select id="trTal"></select>
+    <div class="row">
+      <div><label>Data</label><input id="trData" type="date"></div>
+      <div><label>Observação</label><input id="trObs" placeholder="ex.: tanque 2, vazão 100 L/ha"></div>
+    </div>
+    <label style="margin-top:14px">Produtos usados</label>
+    <div id="trItens"></div>
+    <button class="btn sec" onclick="trAddItem()">+ Adicionar produto</button>
+    <button class="btn big" onclick="trSalvar()">📤 Enviar pedido de baixa</button>
+    <p class="muted">O pedido vai para quem cuida do estoque aceitar ou recusar.</p>
+  </div>
+  <div class="card">
+    <h2>Meus pedidos</h2>
+    <div id="trHist" class="muted">Nenhum ainda.</div>
+  </div>
+</main>
+</section>
+
+<!-- ================= TABLET DO ESTOQUE ================= -->
+<section id="appEst" class="hide">
+<main>
+  <div class="card hide" id="esSemMod"><h2>Módulo Estoque não contratado</h2><p class="muted">Fale com o fornecedor do sistema para liberar.</p></div>
+  <div id="pdEst"></div>
+  <div class="card">
+    <div class="row">
+      <div style="flex:2"><input id="esBusca" placeholder="🔍 Buscar produto..." oninput="renderEstTablet()"></div>
+      <div><select id="esCat" onchange="renderEstTablet()"></select></div>
+    </div>
+  </div>
+  <div class="card est-list" id="esLista"></div>
+  <div class="card">
+    <h2>Últimas saídas</h2>
+    <div class="scroll"><table id="esSaidas"></table></div>
+  </div>
+</main>
+</section>
+
+<!-- ================= ADMINISTRADOR (você, fornecedor do sistema) ================= -->
+<section id="appAdm" class="hide">
+<main>
+  <div class="kpis" id="adKpis"></div>
+  <div class="card">
+    <h2>➕ Nova fazenda (cliente)</h2>
+    <div class="row">
+      <div style="flex:2"><label>Nome da fazenda</label><input id="aNome" placeholder="ex.: Fazenda Boa Vista" oninput="if(!aCodMexido)$('aCod').value=slug(this.value).replace(/^fazenda-/,'')"></div>
+      <div><label>Código (usado no login)</label><input id="aCod" autocapitalize="none" placeholder="ex.: boavista" oninput="aCodMexido=true;this.value=slug(this.value)"></div>
+    </div>
+    <div class="row">
+      <div><label>Nome do patrão</label><input id="aPNome" placeholder="ex.: João"></div>
+      <div><label>Usuário do patrão</label><input id="aPUser" autocapitalize="none" placeholder="ex.: joao"></div>
+      <div><label>Senha inicial (mín. 6)</label><input id="aPPass" type="text"></div>
+    </div>
+    <div class="row">
+      <div><label>Dias de licença inicial</label><input id="aDias" type="number" value="15" min="1"></div>
+      <div><label>Valor mensal combinado (R$)</label><input id="aValor" type="number" inputmode="decimal" step="any" min="0"></div>
+      <div><label>Contato (telefone/WhatsApp)</label><input id="aCont"></div>
+    </div>
+    <label>Módulos contratados</label>
+    <div id="aMods" style="display:flex;gap:14px;flex-wrap:wrap"></div>
+    <button class="btn" id="aBtn" onclick="criarFazenda()">Criar fazenda e conta do patrão</button>
+    <p class="muted">Precisa de internet. Entregue ao cliente: o endereço do sistema, o código da fazenda, o usuário e a senha do patrão.</p>
+  </div>
+  <div class="card">
+    <div class="row"><div style="flex:2"><input id="aBusca" placeholder="🔍 Buscar fazenda..." oninput="renderAdmin()"></div>
+    <div><select id="aFiltro" onchange="renderAdmin()"><option value="">Todas</option><option value="ativa">Ativas</option><option value="vence">Vencendo em 7 dias</option><option value="venc">Vencidas</option></select></div></div>
+  </div>
+  <div id="aLista"></div>
+  <div class="card"><h2>💵 Pagamentos recebidos</h2><div class="scroll"><table id="aPag"></table></div></div>
+</main>
+</section>
+
+<!-- ================= PATRÃO ================= -->
+<section id="appPat" class="hide">
+<nav id="nav">
+  <button data-t="ord">Ordens</button>
+  <button data-t="ped">Pedidos <span id="pdBadge"></span></button>
+  <button data-t="mov" class="on">Entrada/Baixa</button>
+  <button data-t="est">Estoque</button>
+  <button data-t="fin">Finanças</button>
+  <button data-t="des">Despesas</button>
+  <button data-t="tal">Talhões</button>
+  <button data-t="pro">Produção</button>
+  <button data-t="his">Histórico</button>
+  <button data-t="usu">Usuários</button>
+  <button data-t="bkp">Backup</button>
+</nav>
+<main>
+
+<!-- ORDENS DE APLICAÇÃO -->
+<section id="t-ord" class="hide">
+  <div class="card">
+    <h2>📋 Nova ordem de aplicação</h2>
+    <div class="row">
+      <div><label>Para qual tratorista</label><select id="oPara"></select></div>
+      <div><label>Talhão</label><select id="oTal" onchange="oTalMudou()"></select></div>
+    </div>
+    <div class="row">
+      <div><label>Serviço</label><input id="oServ" list="servs" placeholder="ex.: Pulverização"></div>
+      <div><label>Área a aplicar (ha)</label><input id="oArea" type="number" inputmode="decimal" step="any" min="0" oninput="oResumo()"></div>
+    </div>
+    <datalist id="servs"><option>Pulverização<option>Dessecação<option>Adubação<option>Semeadura<option>Fungicida<option>Inseticida</datalist>
+    <div class="row">
+      <div><label>Vazão da calda (L/ha) – opcional</label><input id="oVazao" type="number" inputmode="decimal" step="any" min="0" oninput="oResumo()"></div>
+      <div><label>Capacidade do tanque (L) – opcional</label><input id="oTanque" type="number" inputmode="decimal" step="any" min="0" oninput="oResumo()"></div>
+    </div>
+    <label style="margin-top:14px">Produtos e dose por hectare</label>
+    <div id="oItens"></div>
+    <button class="btn sec" onclick="oAddItem()">+ Adicionar produto</button>
+    <div id="oRes" style="margin-top:12px"></div>
+    <label>Observações para o tratorista</label><input id="oObs" placeholder="ex.: aplicar de manhã, bico leque 110.02">
+    <button class="btn" onclick="enviarOrdem()">📤 Enviar ordem</button>
+  </div>
+  <div id="oLista"></div>
+</section>
+
+<!-- PEDIDOS -->
+<section id="t-ped" class="hide"><div id="pdPat"></div></section>
+
+<!-- MOVIMENTAR -->
+<section id="t-mov">
+  <div class="card">
+    <h2>Nova movimentação</h2>
+    <div class="seg">
+      <button id="bEnt" class="on ent" onclick="setTipo('E')">⬇ Entrada</button>
+      <button id="bBx" class="bx" onclick="setTipo('B')">⬆ Baixa</button>
+    </div>
+    <label>Produto</label>
+    <select id="mProd"></select>
+    <div class="muted" id="mSaldo" style="margin-top:4px"></div>
+    <div class="row">
+      <div><label>Quantidade</label><input id="mQtd" type="number" inputmode="decimal" step="any" min="0"></div>
+      <div><label id="mValL">Valor unitário pago (R$)</label><input id="mVal" type="number" inputmode="decimal" step="any" min="0"></div>
+    </div>
+    <div class="row">
+      <div><label>Data</label><input id="mData" type="date"></div>
+      <div><label>Observação</label><input id="mObs" placeholder="ex.: fornecedor, nota fiscal..."></div>
+    </div>
+    <div id="mTalBox" class="hide">
+      <label>Destino: para qual talhão foi?</label>
+      <select id="mTal" onchange="atualizaFinChk()"></select>
+      <div class="muted" id="mCusto" style="margin-top:4px"></div>
+    </div>
+    <label class="chk" id="mFinBox"><input type="checkbox" id="mFin"> <span id="mFinTxt">Lançar no financeiro como despesa (compra)</span></label>
+    <button class="btn" onclick="salvarMov()">Salvar</button>
+  </div>
+</section>
+
+<!-- ESTOQUE -->
+<section id="t-est" class="hide">
+  <div class="card">
+    <h2 id="pTitulo">Cadastrar produto</h2>
+    <input type="hidden" id="pId">
+    <div class="row">
+      <div style="flex:2"><label>Nome</label><input id="pNome" placeholder="ex.: Glifosato, Semente soja TMG..."></div>
+      <div><label>Unidade</label><input id="pUn" placeholder="kg, L, sc, un" list="uns"></div>
+    </div>
+    <datalist id="uns"><option>un<option>kg<option>L<option>sc<option>t<option>cx<option>m</datalist>
+    <div class="row">
+      <div><label>Categoria</label><input id="pCat" placeholder="ex.: Herbicida, Adubo, Semente" list="cats"></div>
+      <div><label>Estoque mínimo (alerta)</label><input id="pMin" type="number" inputmode="decimal" step="any" min="0"></div>
+    </div>
+    <datalist id="cats"></datalist>
+    <button class="btn" onclick="salvarProd()">Salvar produto</button>
+    <button class="btn sec hide" id="pCancel" onclick="limparProd()">Cancelar</button>
+  </div>
+  <div class="card">
+    <h2>Produtos em estoque</h2>
+    <input id="busca" placeholder="🔍 Buscar produto..." oninput="renderEst()">
+    <div class="scroll" style="margin-top:10px"><table id="tEst"></table></div>
+  </div>
+</section>
+
+<!-- FINANÇAS -->
+<section id="t-fin" class="hide">
+  <div class="card"><label>Mês</label><input id="fMes" type="month" onchange="renderFin()"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="card">
+    <h2>Novo lançamento</h2>
+    <div class="seg">
+      <button id="bRec" class="on ent" onclick="setFTipo('R')">+ Receita</button>
+      <button id="bDes" class="bx" onclick="setFTipo('D')">− Despesa</button>
+    </div>
+    <div class="row">
+      <div style="flex:2"><label>Descrição</label><input id="fDesc" placeholder="ex.: Venda de soja, Diesel, Salário"></div>
+      <div><label>Valor (R$)</label><input id="fVal" type="number" inputmode="decimal" step="any" min="0"></div>
+    </div>
+    <div class="row">
+      <div><label>Categoria</label><input id="fCat" placeholder="ex.: Combustível, Venda" list="fcats"></div>
+      <div><label>Data</label><input id="fData" type="date"></div>
+    </div>
+    <label>Talhão (opcional)</label><select id="fTal"></select>
+    <datalist id="fcats"></datalist>
+    <button class="btn" onclick="salvarFin()">Salvar lançamento</button>
+  </div>
+  <div class="card"><h2>Lançamentos do mês</h2><div class="scroll"><table id="tFin"></table></div></div>
+  <div class="card"><h2>Por categoria (mês)</h2><div class="scroll"><table id="tCat"></table></div></div>
+  <p class="muted">Finanças mostra o caixa (o que entrou e saiu de dinheiro). O custo dos produtos aplicados em cada talhão aparece na aba Talhões.</p>
+</section>
+
+<!-- DESPESAS ADICIONAIS -->
+<section id="t-des" class="hide">
+  <div class="card">
+    <h2>Nova despesa</h2>
+    <div class="seg" id="dSeg">
+      <button data-g="insumos" class="on" onclick="setG('insumos')">🧪 Insumos</button>
+      <button data-g="pecas" onclick="setG('pecas')">🔧 Peças</button>
+      <button data-g="func" onclick="setG('func')">👷 Funcionários</button>
+      <button data-g="comb" onclick="setG('comb')">⛽ Combustível</button>
+      <button data-g="outros" onclick="setG('outros')">📦 Outras</button>
+    </div>
+    <div id="dFuncBox" class="row hide">
+      <div><label>Funcionário</label><input id="dFunc" list="funcs" placeholder="ex.: Carlos"></div>
+      <div><label>Tipo de pagamento</label><select id="dSub"><option>Salário</option><option>Diária</option><option>Adiantamento</option><option>Hora extra</option><option>13º / férias</option><option>Encargos (INSS, FGTS)</option><option>Outro</option></select></div>
+    </div>
+    <div id="dInsBox" class="hide">
+      <div class="row">
+        <div style="flex:2"><label>Produto</label><select id="dProd" onchange="dInsPrevia()"></select></div>
+        <div><label>Quantidade</label><input id="dQtd" type="number" inputmode="decimal" step="any" min="0" oninput="dInsPrevia()"></div>
+      </div>
+      <div class="row">
+        <div><label>Fornecedor / revenda</label><input id="dIForn" list="forns" placeholder="ex.: Agropeças, Cooperativa"></div>
+        <div><label>Nota fiscal (opcional)</label><input id="dNota"></div>
+      </div>
+      <label class="chk" id="dEstBox"><input type="checkbox" id="dEstChk" checked onchange="dInsOnde()"> Dar entrada no estoque</label>
+      <p class="muted" style="margin:4px 0 0">Produto que não está na lista? Cadastre na aba Estoque (ex.: categoria Herbicida, Fungicida, Adubo, Semente).</p>
+    </div>
+    <div id="dDescBox"><label id="dDescL">Peça ou serviço</label><input id="dDesc" placeholder="ex.: Rolamento da roda, troca de óleo"></div>
+    <div class="row" id="dMaqBox">
+      <div><label>Máquina</label><input id="dMaq" list="maqs" placeholder="ex.: JD 6150J, Pulverizador"></div>
+      <div id="dLitBox" class="hide"><label>Litros</label><input id="dLit" type="number" inputmode="decimal" step="any" min="0"></div>
+      <div id="dFornBox"><label>Fornecedor / oficina</label><input id="dForn" list="forns"></div>
+    </div>
+    <div class="row">
+      <div><label id="dValL">Valor (R$)</label><input id="dVal" type="number" inputmode="decimal" step="any" min="0" oninput="dInsPrevia()"></div>
+      <div><label>Data</label><input id="dData" type="date"></div>
+    </div>
+    <div id="dIPrev" class="muted" style="margin-top:6px"></div>
+    <div id="dOndeBox"><label>Lançar em</label>
+    <select id="dOnde"></select>
+    <p class="muted" style="margin:4px 0 0">"Ratear" divide o valor entre todos os talhões pela área, para entrar no custo por hectare.</p></div>
+    <p class="muted hide" id="dOndeEst" style="margin:6px 0 0">🧪 Entra no estoque. O custo vai para o talhão quando o produto for aplicado (baixa ou pedido da calda), pelo custo médio.</p>
+    <button class="btn" onclick="salvarDesp()">Salvar despesa</button>
+    <datalist id="funcs"></datalist><datalist id="maqs"></datalist><datalist id="forns"></datalist>
+  </div>
+  <div class="card"><label>Mês</label><input id="dMes" type="month" onchange="renderDesp()"></div>
+  <div class="kpis" id="dKpis"></div>
+  <div class="card"><h2>Despesas do mês</h2><div class="scroll"><table id="dLista"></table></div></div>
+  <div class="row" style="gap:14px">
+    <div class="card" style="min-width:260px"><h2>🧪 Insumos por tipo</h2><div class="scroll"><table id="dInsT"></table></div></div>
+    <div class="card" style="min-width:260px"><h2>Por máquina (peças + combustível)</h2><div class="scroll"><table id="dMaqT"></table></div></div>
+    <div class="card" style="min-width:260px"><h2>Por funcionário</h2><div class="scroll"><table id="dFuncT"></table></div></div>
+  </div>
+</section>
+
+<!-- TALHÕES -->
+<section id="t-tal" class="hide">
+  <div class="card">
+    <h2>Período</h2>
+    <div class="row">
+      <div><label>De</label><input id="tDe" type="date" onchange="renderTal()"></div>
+      <div><label>Até</label><input id="tAte" type="date" onchange="renderTal()"></div>
+    </div>
+    <p class="muted">Em branco = tudo. Ex.: safra de 01/09 a 30/04.</p>
+  </div>
+  <div id="talCards"></div>
+  <div class="card hide" id="talDet">
+    <h2 id="talDetT"></h2>
+    <div class="kpis" id="talDetK" style="margin-bottom:6px"></div>
+    <h2 style="margin-top:10px">Por categoria</h2>
+    <div class="scroll"><table id="talDetC"></table></div>
+    <h2 style="margin-top:14px">Lançamentos</h2>
+    <div class="scroll"><table id="talDetL"></table></div>
+  </div>
+  <div class="card">
+    <h2 id="tTitulo">Cadastrar talhão</h2>
+    <input type="hidden" id="tId">
+    <div class="row">
+      <div style="flex:2"><label>Nome</label><input id="tNome" placeholder="ex.: Talhão 1, Baixada"></div>
+      <div><label>Área (ha)</label><input id="tArea" type="number" inputmode="decimal" step="any" min="0"></div>
+    </div>
+    <label>Cultura / safra atual (opcional)</label><input id="tCult" placeholder="ex.: Soja 26/27">
+    <button class="btn" onclick="salvarTal()">Salvar talhão</button>
+    <button class="btn sec hide" id="tCancel" onclick="limparTal()">Cancelar</button>
+  </div>
+</section>
+
+<!-- PRODUÇÃO -->
+<section id="t-pro" class="hide">
+  <div class="card">
+    <h2>🌾 Lançar produção (colheita)</h2>
+    <div class="row">
+      <div><label>Talhão</label><select id="prTal" onchange="prTalMudou()"></select></div>
+      <div><label>Cultura / safra</label><input id="prCult" list="cults" placeholder="ex.: Soja 26/27"></div>
+    </div>
+    <div class="row">
+      <div><label>Quantidade colhida</label><input id="prQtd" type="number" inputmode="decimal" step="any" min="0" oninput="prPrevia()"></div>
+      <div><label>Unidade</label><select id="prUn" onchange="prPrevia()"><option value="sc">sacas (60 kg)</option><option value="kg">kg</option><option value="t">toneladas</option></select></div>
+      <div><label>Data</label><input id="prData" type="date"></div>
+    </div>
+    <div class="row">
+      <div><label>Umidade (%) – opcional</label><input id="prUmi" type="number" inputmode="decimal" step="any" min="0"></div>
+      <div><label>Preço estimado (R$ por saca) – opcional</label><input id="prPreco" type="number" inputmode="decimal" step="any" min="0" oninput="prPrevia()"></div>
+    </div>
+    <label>Destino / observação</label><input id="prObs" placeholder="ex.: silo 2, cooperativa, ticket 4521">
+    <label class="chk"><input type="checkbox" id="prEstChk" onchange="$('prEstBox').classList.toggle('hide',!this.checked)"> Dar entrada no estoque</label>
+    <div id="prEstBox" class="hide"><label>Como qual produto do estoque</label><select id="prEst"></select>
+      <p class="muted" style="margin:4px 0 0">Cadastre antes o produto (ex.: "Soja grão", unidade sc ou kg) na aba Estoque. A quantidade é convertida para a unidade do produto.</p></div>
+    <div id="prPrev" class="muted" style="margin-top:8px"></div>
+    <button class="btn" onclick="salvarProducao()">Salvar produção</button>
+    <datalist id="cults"></datalist>
+  </div>
+  <div class="card">
+    <div class="row">
+      <div><label>Cultura / safra</label><select id="prFiltro" onchange="renderProd()"></select></div>
+      <div><label>Custos de</label><input id="prDe" type="date" onchange="renderProd()"></div>
+      <div><label>até</label><input id="prAte" type="date" onchange="renderProd()"></div>
+    </div>
+    <p class="muted" style="margin:6px 0 0">O custo por saca usa os custos do talhão nesse período (insumos aplicados, despesas e rateios). Deixe em branco para usar tudo.</p>
+  </div>
+  <div class="kpis" id="prKpis"></div>
+  <div class="card"><h2>Produção por talhão</h2><div class="scroll"><table id="prTab"></table></div></div>
+  <div class="card"><h2>Lançamentos de colheita</h2><div class="scroll"><table id="prLista"></table></div></div>
+</section>
+
+<!-- HISTÓRICO -->
+<section id="t-his" class="hide">
+  <div class="card">
+    <div class="row">
+      <div><label>Produto</label><select id="hProd" onchange="renderHis()"></select></div>
+      <div><label>Tipo</label><select id="hTipo" onchange="renderHis()"><option value="">Todos</option><option value="E">Entradas</option><option value="B">Baixas</option></select></div>
+      <div><label>Quem</label><select id="hQuem" onchange="renderHis()"></select></div>
+    </div>
+  </div>
+  <div class="card"><h2>Movimentações</h2><div class="scroll"><table id="tHis"></table></div></div>
+</section>
+
+<!-- USUÁRIOS -->
+<section id="t-usu" class="hide">
+  <div class="card">
+    <h2>Novo usuário</h2>
+    <div class="row">
+      <div><label>Nome</label><input id="uNome" placeholder="ex.: Carlos"></div>
+      <div><label>Usuário (login)</label><input id="uUser" autocapitalize="none" placeholder="ex.: carlos"></div>
+    </div>
+    <div class="row">
+      <div><label>Senha (mín. 6)</label><input id="uPass" type="text"></div>
+      <div><label>Tipo</label><select id="uPapel">
+        <option value="tratorista">Tratorista (dá baixa, não vê estoque)</option>
+        <option value="estoque">Tablet do estoque (vê produtos e quantidade)</option>
+      </select></div>
+    </div>
+    <button class="btn" id="uBtn" onclick="criarUsuario()">Criar usuário</button>
+    <p class="muted">Precisa de internet para criar. Entregue para a pessoa: o <b>código da fazenda</b> (<span id="uCod"></span>), o usuário e a senha.</p>
+  </div>
+  <div class="card"><h2>Usuários</h2><div class="scroll"><table id="tUsu"></table></div>
+    <p class="muted">Para trocar a senha de alguém: remova o acesso e crie de novo com outro nome de usuário.</p></div>
+</section>
+
+<!-- BACKUP -->
+<section id="t-bkp" class="hide">
+  <div class="card">
+    <h2>Backup</h2>
+    <p class="muted">Os dados ficam na nuvem (Firebase). Mesmo assim, baixe um backup de vez em quando.</p>
+    <button class="btn" onclick="exportar()">💾 Baixar backup (.json)</button>
+  </div>
+  <div class="card">
+    <h2>Trazer dados do app antigo</h2>
+    <p class="muted">Se você usou o arquivo <b>estoque.html</b>, baixe o backup nele (aba Backup) e escolha o arquivo aqui. Os produtos, talhões e movimentações vão para a nuvem.</p>
+    <input type="file" id="arq" accept=".json,application/json" onchange="importar(event)">
+  </div>
+  <div class="card">
+    <h2>Exportar para planilha (Excel)</h2>
+    <button class="btn sec" onclick="csv('est')">Estoque (.csv)</button>
+    <button class="btn sec" onclick="csv('mov')">Movimentações (.csv)</button>
+    <button class="btn sec" onclick="csv('fin')">Financeiro (.csv)</button>
+    <button class="btn sec" onclick="csv('tal')">Custo por talhão (.csv)</button>
+    <button class="btn sec" onclick="csv('pro')">Produção (.csv)</button>
+  </div>
+  <p class="muted" id="info"></p>
+</section>
+</main>
+</section>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script>
+// ================= utilidades =================
+const $=id=>document.getElementById(id);
+const hoje=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);};
+const num=v=>{const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?0:n;};
+const fq=n=>Number(n).toLocaleString('pt-BR',{maximumFractionDigits:3});
+const fm=n=>Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fd=s=>s?s.split('-').reverse().join('/'):'';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ord=(a,b)=>a.localeCompare(b,'pt',{numeric:true,sensitivity:'base'});
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2600);}
+function lsGet(k,d){try{return JSON.parse(localStorage.getItem(k))??d;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+// ================= firebase =================
+let auth,db;
+try{
+  firebase.initializeApp(FIREBASE_CONFIG);
+  auth=firebase.auth();db=firebase.firestore();
+  db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+}catch(e){document.body.innerHTML='<main><div class="card"><h2>Configuração faltando</h2><p>Preencha o arquivo <b>config.js</b> com os dados do seu projeto Firebase.</p><p class="muted">'+esc(e.message)+'</p></div></main>';throw e;}
+// ===== várias fazendas: cada uma tem um código e os dados ficam em fazendas/{código}/... =====
+let FID=null;
+const col=n=>FID?db.collection('fazendas').doc(FID).collection(n):db.collection(n);
+const raiz=n=>db.collection(n);
+const slug=s=>String(s||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+const emailDe=(u,f)=>{u=String(u).trim().toLowerCase();if(u.includes('@'))return u;u=slug(u);return (f?u+'.'+slug(f):u)+'@'+DOMINIO_LOGIN;};
+const ADMIN_EMAIL='admin@'+DOMINIO_LOGIN;
+const novoId=()=>db.collection('x').doc().id;
+const DIA=86400000;
+const diasAte=v=>{const a=new Date(v),b=new Date();a.setHours(0,0,0,0);b.setHours(0,0,0,0);return Math.round((a-b)/DIA);}; // por dia do calendário
+
+// ===== licença =====
+const MODS={estoque:'📦 Estoque',financas:'💰 Finanças',ordens:'📋 Ordens',piloto:'🚜 Piloto'};
+let LIC=null; // {ativa, validade, mod:{}, nome}
+function licOk(m){return !!(LIC&&LIC.ativa&&(!m||LIC.mod[m]));}
+function lerLic(d){const l=d.licenca||{};return{nome:d.nome||'',validade:l.validade||0,ativa:Date.now()<(l.validade||0),mod:l.modulos||{}};}
+function renderLic(){const e=$('lic');if(!LIC||S.papel==='admin'){e.classList.add('hide');return;}
+  const dias=diasAte(LIC.validade),dt=new Date(LIC.validade).toLocaleDateString('pt-BR');
+  e.classList.toggle('hide',LIC.ativa&&dias>7);
+  e.className=LIC.ativa?(dias>7?'hide':'lic aviso'):'lic venc';
+  e.innerHTML=LIC.ativa?`⏰ A licença da fazenda vence ${dias===0?'<b>hoje</b>':`em <b>${dias} dia${dias===1?'':'s'}</b>`} (${dt}). Fale com o fornecedor para renovar.`
+    :`🔒 Licença vencida em ${dt}. Os dados continuam aqui para consulta, mas não dá para lançar nada. Fale com o fornecedor do sistema para renovar.`;}
+const TAB_MOD={ord:'ordens',ped:'estoque',mov:'estoque',est:'estoque',his:'estoque',fin:'financas',des:'financas',pro:'financas'};
+function aplicaModulos(){
+  if(S.papel==='patrao'){
+    document.querySelectorAll('#nav button').forEach(b=>{const m=TAB_MOD[b.dataset.t];b.classList.toggle('hide',!!m&&!LIC.mod[m]);});
+    const on=document.querySelector('#nav button.on');if(on&&on.classList.contains('hide')){const f=document.querySelector('#nav button:not(.hide)');if(f)aba(f.dataset.t);}
+    $('prEstChk').parentNode.classList.toggle('hide',!LIC.mod.estoque);}
+  if(S.papel==='tratorista'){$('trForm').classList.toggle('hide',!LIC.mod.estoque);$('trOrdens').classList.toggle('hide',!LIC.mod.ordens);}
+  if(S.papel==='estoque')$('esSemMod').classList.toggle('hide',!!LIC.mod.estoque);}
+
+// estado
+const S={uid:null,nome:'',papel:null,C:{},T:{},M:[],P:{},F:[],U:{},unsub:[]};
+const prod=id=>S.C[id];
+const talNome=id=>S.T[id]?S.T[id].nome:'';
+
+// sincronização
+function setSync(){const s=$('sync');if(!S.papel){s.classList.add('hide');return;}
+  s.classList.remove('hide');
+  if(!navigator.onLine){s.classList.add('off');s.textContent='📡 Sem sinal: tudo fica salvo no aparelho e é enviado quando conectar.';}
+  else{s.classList.remove('off');s.textContent=S.pend?'⏳ Enviando para a nuvem...':'✔ Conectado e sincronizado';}}
+window.addEventListener('online',setSync);window.addEventListener('offline',setSync);
+function gravar(batch,okMsg){ // não espera o servidor: funciona sem sinal
+  if(S.papel!=='admin'&&!licOk()){toast('🔒 Licença vencida: não dá para lançar. Fale com o fornecedor do sistema.');return new Promise(()=>{});}
+  S.pend=true;setSync();
+  const p=batch.commit();
+  p.then(()=>{S.pend=false;setSync();}).catch(e=>{S.pend=false;setSync();toast('Erro ao gravar: '+(e.code==='permission-denied'?'sem permissão (licença ou módulo)':e.message));});
+  if(okMsg)toast(okMsg+(navigator.onLine?'':' (será enviado quando tiver sinal)'));
+  return p;}
+
+// ================= login =================
+let modoPrimeiro=false;
+function trocaPrimeiro(){modoPrimeiro=!modoPrimeiro;$('lgFazBox').classList.toggle('hide',modoPrimeiro);
+  $('lgT').textContent=modoPrimeiro?'Criar conta de administrador':'Entrar';$('lgBtn').textContent=modoPrimeiro?'Criar conta':'Entrar';
+  $('lgUser').value=modoPrimeiro?'admin':'';$('lgUser').disabled=modoPrimeiro;
+  $('lgTroca').textContent=modoPrimeiro?'Voltar para o login':'Instalação: criar conta de administrador';$('lgMsg').textContent='';}
+async function entrar(){
+  const u=$('lgUser').value.trim(),p=$('lgPass').value,f=slug($('lgFaz').value);if(!u||!p){toast('Preencha usuário e senha');return;}
+  const ehAdmin=modoPrimeiro||u.toLowerCase()==='admin';
+  if(!ehAdmin&&!f){toast('Preencha o código da fazenda');return;}
+  $('lgBtn').disabled=true;$('lgMsg').textContent='Aguarde...';
+  try{
+    if(!ehAdmin)lsSet('fazCod',f);
+    if(modoPrimeiro)await auth.createUserWithEmailAndPassword(ADMIN_EMAIL,p);
+    else await auth.signInWithEmailAndPassword(ehAdmin?ADMIN_EMAIL:emailDe(u,f),p);
+  }catch(e){
+    const m={'auth/invalid-credential':'Usuário, senha ou código da fazenda errados','auth/wrong-password':'Senha errada','auth/user-not-found':'Usuário não existe nesta fazenda',
+      'auth/email-already-in-use':'A conta de administrador já existe. Entre com ela.','auth/weak-password':'Senha fraca (mínimo 6 caracteres)','auth/network-request-failed':'Sem internet. O primeiro login precisa de sinal.'};
+    $('lgMsg').textContent=m[e.code]||e.message;}
+  $('lgBtn').disabled=false;}
+function sair(){if(!confirm('Sair desta conta?'))return;S.unsub.forEach(f=>f());S.unsub=[];auth.signOut();}
+
+auth.onAuthStateChanged(user=>abrir(user));
+async function abrir(user){
+  S.unsub.forEach(f=>f());S.unsub=[];S.papel=null;FID=null;LIC=null;renderLic();
+  ['appPat','appTrat','appEst','appAdm'].forEach(i=>$(i).classList.add('hide'));
+  if(!user){$('login').classList.remove('hide');$('lgFaz').value=lsGet('fazCod','');$('who').textContent='';$('btnSair').classList.add('hide');setSync();return;}
+  S.uid=user.uid;
+  if(user.email===ADMIN_EMAIL){S.papel='admin';S.nome='Administrador';
+    $('login').classList.add('hide');$('btnSair').classList.remove('hide');$('who').innerHTML='Administrador<br>do sistema';setSync();iniciaAdmin();return;}
+  let info=lsGet('membro_'+user.uid,null);
+  try{const d=await raiz('membros').doc(user.uid).get();if(d.exists){info=d.data();lsSet('membro_'+user.uid,info);}else info=null;}
+  catch(e){/* sem sinal: usa o que está guardado */}
+  if(!info||!info.papel||!info.fid){$('login').classList.remove('hide');$('lgMsg').textContent='Este usuário não tem acesso. Peça ao patrão.';auth.signOut();return;}
+  FID=info.fid;S.papel=info.papel;S.nome=info.nome||'';
+  LIC=lsGet('lic_'+FID,null);
+  await new Promise(res=>{let pri=true;S.unsub.push(raiz('fazendas').doc(FID).onSnapshot(d=>{
+      if(d.exists){LIC=lerLic(d.data());lsSet('lic_'+FID,LIC);}
+      renderLic();if(!pri&&LIC)aplicaModulos();if(pri){pri=false;res();}},e=>{if(pri){pri=false;res();}}));});
+  if(!LIC){$('login').classList.remove('hide');$('lgMsg').textContent='Não foi possível ler a fazenda. Conecte na internet e tente de novo.';return;}
+  $('login').classList.add('hide');$('btnSair').classList.remove('hide');
+  $('who').innerHTML=esc(S.nome)+'<br>'+esc(LIC.nome||FID)+' · '+({patrao:'Patrão',tratorista:'Tratorista',estoque:'Estoque'}[S.papel]||'');
+  setSync();renderLic();
+  if(S.papel==='patrao')iniciaPatrao();else if(S.papel==='tratorista')iniciaTrat();else if(S.papel==='estoque')iniciaEst();
+  aplicaModulos();
+}
+
+function escuta(nome,fn){S.unsub.push(col(nome).onSnapshot(s=>{fn(s);},e=>toast('Erro ao ler '+nome+': '+e.code)));}
+function mapa(s){const o={};s.docs.forEach(d=>o[d.id]={id:d.id,...d.data()});return o;}
+function lista(s){return s.docs.map(d=>({id:d.id,...d.data()}));}
+let rTimer;function agenda(fn){clearTimeout(rTimer);rTimer=setTimeout(fn,60);}
+
+// ================= saldos e custos =================
+function saldo(pid){return S.M.reduce((s,m)=>m.pid===pid?s+(m.tipo==='E'?m.qtd:-m.qtd):s,0);}
+let K={avg:{},cm:{}};
+function calcCustos(){ // custo médio móvel por produto; custo de cada baixa
+  const avg={},cm={},s={};
+  [...S.M].sort((a,b)=>a.data.localeCompare(b.data)||(a.criadoEm||0)-(b.criadoEm||0)).forEach(m=>{
+    const p=m.pid;s[p]=s[p]||0;avg[p]=avg[p]||0;
+    if(m.tipo==='E'){const pr=S.P[m.id]?S.P[m.id].val:0;if(pr>0)avg[p]=s[p]>0?(s[p]*avg[p]+m.qtd*pr)/(s[p]+m.qtd):pr;s[p]+=m.qtd;}
+    else{cm[m.id]=m.qtd*avg[p];s[p]-=m.qtd;}});
+  K={avg,cm};}
+function catalogoOrdenado(){return Object.values(S.C).sort((a,b)=>ord(a.nome,b.nome));}
+function talhoesOrdenados(){return Object.values(S.T).sort((a,b)=>ord(a.nome,b.nome));}
+
+
+// ================= ADMINISTRADOR =================
+let aCodMexido=false;const AD={F:{},Pg:[]};
+function iniciaAdmin(){
+  $('appAdm').classList.remove('hide');
+  $('aMods').innerHTML=Object.entries(MODS).map(([k,n])=>`<label class="chk" style="margin:4px 0"><input type="checkbox" value="${k}" checked> ${n}</label>`).join('');
+  S.unsub.push(raiz('fazendas').onSnapshot(s=>{AD.F=mapa(s);agenda(renderAdmin);},e=>toast('Erro: '+e.code)));
+  S.unsub.push(raiz('pagamentos').onSnapshot(s=>{AD.Pg=lista(s);agenda(renderAdmin);},e=>toast('Erro: '+e.code)));}
+function stFaz(f){const v=(f.licenca||{}).validade||0,d=diasAte(v);
+  return v<=Date.now()?{k:'venc',c:'v',t:`Vencida há ${Math.max(1,-d)} dia${-d===1?'':'s'}`}:d<=7?{k:'vence',c:'w',t:(d===0?'Vence hoje':`Vence em ${d} dia${d===1?'':'s'}`)}:{k:'ativa',c:'a',t:`Ativa até ${new Date(v).toLocaleDateString('pt-BR')}`};}
+function maisMeses(base,meses){const d=new Date(Math.max(base||0,Date.now()));d.setMonth(d.getMonth()+meses);d.setHours(23,59,59,0);return d.getTime();}
+async function criarFazenda(){
+  const nome=$('aNome').value.trim(),cod=slug($('aCod').value),pn=$('aPNome').value.trim(),pu=slug($('aPUser').value),pp=$('aPPass').value,dias=num($('aDias').value)||15;
+  if(!nome||!cod){toast('Preencha o nome e o código');return;}if(!pn||!pu||pp.length<6){toast('Preencha o patrão: nome, usuário e senha (mín. 6)');return;}
+  if(!navigator.onLine){toast('Precisa de internet');return;}
+  const mods={};[...document.querySelectorAll('#aMods input')].forEach(i=>mods[i.value]=i.checked);
+  $('aBtn').disabled=true;
+  try{
+    if((await raiz('fazendas').doc(cod).get()).exists){toast('Já existe uma fazenda com o código '+cod);$('aBtn').disabled=false;return;}
+    const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(FIREBASE_CONFIG,'sec');
+    const cr=await sec.auth().createUserWithEmailAndPassword(emailDe(pu,cod),pp);await sec.auth().signOut();
+    const v=new Date(Date.now()+dias*DIA);v.setHours(23,59,59,0);
+    const b=db.batch(),agora=Date.now();
+    b.set(raiz('fazendas').doc(cod),{nome,cod,licenca:{validade:v.getTime(),modulos:mods},valorMensal:num($('aValor').value),contato:$('aCont').value.trim(),dono:cr.user.uid,donoNome:pn,donoLogin:pu,criadaEm:agora});
+    b.set(raiz('membros').doc(cr.user.uid),{fid:cod,papel:'patrao',nome:pn,login:pu,criadoEm:agora});
+    b.set(raiz('fazendas').doc(cod).collection('usuarios').doc(cr.user.uid),{nome:pn,papel:'patrao',login:pu,criadoEm:agora});
+    await b.commit();
+    toast(`Fazenda criada ✔ Código: ${cod} · usuário: ${pu}`);
+    ['aNome','aCod','aPNome','aPUser','aPPass','aValor','aCont'].forEach(i=>$(i).value='');aCodMexido=false;document.querySelectorAll('#aMods input').forEach(i=>i.checked=true);
+  }catch(e){toast(e.code==='auth/email-already-in-use'?'Esse usuário já existe nessa fazenda':'Erro: '+(e.message||e.code));}
+  $('aBtn').disabled=false;}
+function salvarLic(fid,lic,msg){const f=AD.F[fid];const b=db.batch();b.set(raiz('fazendas').doc(fid),{licenca:{validade:lic.validade,modulos:lic.modulos}},{merge:true});gravar(b,msg);}
+function adMod(fid,m){const l=AD.F[fid].licenca||{};const mods={...(l.modulos||{})};mods[m]=!mods[m];salvarLic(fid,{validade:l.validade,modulos:mods},`${MODS[m]} ${mods[m]?'liberado':'bloqueado'}`);}
+function adEstender(fid,meses,dias){const l=AD.F[fid].licenca||{};let v=dias?Math.max(l.validade||0,Date.now())+dias*DIA:maisMeses(l.validade,meses);
+  salvarLic(fid,{validade:v,modulos:l.modulos||{}},'Licença até '+new Date(v).toLocaleDateString('pt-BR'));}
+function adBloquear(fid){if(!confirm(`Bloquear ${AD.F[fid].nome} agora? O cliente passa a só consultar os dados.`))return;const l=AD.F[fid].licenca||{};salvarLic(fid,{validade:Date.now()-1000,modulos:l.modulos||{}},'Fazenda bloqueada');}
+function adData(fid){const v=$('ad_dt_'+fid).value;if(!v)return;const d=new Date(v+'T23:59:59');const l=AD.F[fid].licenca||{};salvarLic(fid,{validade:d.getTime(),modulos:l.modulos||{}},'Validade alterada');}
+function adPagar(fid){const f=AD.F[fid],val=num($('ad_pv_'+fid).value),m=Math.max(1,Math.round(num($('ad_pm_'+fid).value)||1));
+  if(val<=0){toast('Informe o valor recebido');return;}
+  const l=f.licenca||{},v=maisMeses(l.validade,m),b=db.batch();
+  b.set(raiz('pagamentos').doc(),{fid,fazNome:f.nome,valor:val,meses:m,forma:$('ad_pf_'+fid).value,data:hoje(),validadeNova:v,criadoEm:Date.now()});
+  b.set(raiz('fazendas').doc(fid),{licenca:{validade:v,modulos:l.modulos||{}}},{merge:true});
+  gravar(b,`💵 Pagamento registrado · ${f.nome} até ${new Date(v).toLocaleDateString('pt-BR')}`);}
+function adExcluirPag(id){if(!confirm('Excluir este pagamento da lista? (a validade não muda)'))return;const b=db.batch();b.delete(raiz('pagamentos').doc(id));gravar(b,'Pagamento excluído');}
+function renderAdmin(){
+  const fs=Object.values(AD.F).sort((a,b)=>ord(a.nome,b.nome)),mes=hoje().slice(0,7);
+  const n={ativa:0,vence:0,venc:0};fs.forEach(f=>n[stFaz(f).k]++);
+  const recMes=AD.Pg.filter(p=>p.data.startsWith(mes)).reduce((s,p)=>s+p.valor,0);
+  const prev=fs.filter(f=>stFaz(f).k!=='venc').reduce((s,f)=>s+(f.valorMensal||0),0);
+  $('adKpis').innerHTML=`<div class="kpi"><small>Fazendas ativas</small><b class="pos">${n.ativa+n.vence}</b><small>${fs.length} no total</small></div>
+   <div class="kpi"><small>Vencendo em 7 dias</small><b style="color:#9a6a00">${n.vence}</b></div><div class="kpi"><small>Vencidas</small><b class="neg">${n.venc}</b></div>
+   <div class="kpi"><small>Recebido no mês</small><b class="pos">${fm(recMes)}</b><small>mensalidades ativas: ${fm(prev)}</small></div>`;
+  const b=$('aBusca').value.toLowerCase(),fl=$('aFiltro').value;
+  const ae=document.activeElement;if(ae&&$('aLista').contains(ae)&&ae.tagName!=='BUTTON')return; // não redesenha enquanto digita
+  $('aLista').innerHTML=fs.filter(f=>(f.nome+' '+f.cod+' '+(f.donoNome||'')).toLowerCase().includes(b)&&(!fl||stFaz(f).k===fl||(fl==='ativa'&&stFaz(f).k==='vence'))).map(f=>{
+    const st=stFaz(f),l=f.licenca||{},m=l.modulos||{},id=f.id,vd=new Date(l.validade||Date.now());vd.setMinutes(vd.getMinutes()-vd.getTimezoneOffset());
+    const pg=AD.Pg.filter(p=>p.fid===id).sort((a,b)=>b.criadoEm-a.criadoEm)[0];
+    return `<div class="card fz-card"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><div><h2 style="margin:0">${esc(f.nome)}</h2>
+      <span class="muted">código <b>${esc(f.cod||id)}</b> · patrão ${esc(f.donoNome||'')} (usuário <b>${esc(f.donoLogin||'')}</b>)${f.contato?' · 📞 '+esc(f.contato):''}${f.valorMensal?' · '+fm(f.valorMensal)+'/mês':''}</span></div>
+      <div><span class="st ${st.c}">${st.t}</span></div></div>
+      <div class="chips">${Object.entries(MODS).map(([k,nm])=>`<span class="chip ${m[k]?'on':''}" onclick="adMod('${id}','${k}')">${m[k]?'✔ ':''}${nm}</span>`).join('')}</div>
+      <div class="row" style="align-items:flex-end">
+        <div><button class="btn sm sec" onclick="adEstender('${id}',0,7)">+7 dias</button> <button class="btn sm sec" onclick="adEstender('${id}',1)">+1 mês</button> <button class="btn sm sec" onclick="adEstender('${id}',12)">+1 ano</button> <button class="btn sm" style="background:#b23b2e" onclick="adBloquear('${id}')">Bloquear</button></div>
+        <div style="max-width:220px"><label>Validade</label><div style="display:flex;gap:6px"><input type="date" id="ad_dt_${id}" value="${vd.toISOString().slice(0,10)}"><button class="btn sm sec" onclick="adData('${id}')">OK</button></div></div></div>
+      <div class="row" style="align-items:flex-end;background:#f6f8f5;padding:8px;border-radius:8px;margin-top:10px">
+        <div><label>💵 Valor recebido</label><input id="ad_pv_${id}" type="number" inputmode="decimal" step="any" value="${f.valorMensal||''}"></div>
+        <div style="max-width:110px"><label>Meses</label><input id="ad_pm_${id}" type="number" min="1" value="1"></div>
+        <div style="max-width:140px"><label>Forma</label><select id="ad_pf_${id}"><option>Pix</option><option>Boleto</option><option>Cartão</option><option>Dinheiro</option></select></div>
+        <div><button class="btn" style="margin:0;width:100%" onclick="adPagar('${id}')">Registrar pagamento</button></div></div>
+      ${pg?`<p class="muted" style="margin:6px 0 0">Último pagamento: ${fd(pg.data)} · ${fm(pg.valor)} · ${pg.meses} mês(es) · ${esc(pg.forma)}</p>`:''}</div>`;}).join('')||'<div class="card muted">Nenhuma fazenda.</div>';
+  const pgs=AD.Pg.sort((a,b)=>b.criadoEm-a.criadoEm).slice(0,50);
+  $('aPag').innerHTML=pgs.length?'<tr><th>Data</th><th>Fazenda</th><th class="n">Valor</th><th>Meses</th><th>Forma</th><th></th></tr>'+pgs.map(p=>`<tr><td>${fd(p.data)}</td><td>${esc(p.fazNome)}</td><td class="n pos">${fm(p.valor)}</td><td>${p.meses}</td><td>${esc(p.forma)}</td><td class="n"><button class="btn sm sec" onclick="adExcluirPag('${p.id}')">🗑</button></td></tr>`).join(''):'<tr><td class="muted">Nenhum pagamento ainda.</td></tr>';}
+
+// ================= TRATORISTA =================
+function iniciaTrat(){
+  $('appTrat').classList.remove('hide');$('trData').value=hoje();
+  escuta('catalogo',s=>{S.C=mapa(s);trOpcoes();});
+  escuta('talhoes',s=>{S.T=mapa(s);trOpcoes();});
+  if(!$('trItens').children.length)trAddItem();
+  S.unsub.push(col('pedidos').where('quem','==',S.uid).onSnapshot({includeMetadataChanges:true},s=>{
+    S.Pd=s.docs.map(d=>({id:d.id,...d.data(),_pend:d.metadata&&d.metadata.hasPendingWrites}));trHist();trOrdens();},e=>toast('Erro ao ler pedidos: '+e.code)));
+  let nAnt=-1;
+  S.unsub.push(col('ordens').where('para','==',S.uid).onSnapshot(s=>{S.Ord=lista(s);
+    const n=S.Ord.filter(o=>o.status==='enviada').length;if(nAnt>=0&&n>nAnt){bip();toast('📋 Nova ordem de aplicação!');}nAnt=n;trOrdens();},e=>toast('Erro ao ler ordens: '+e.code)));}
+
+// ---- ordens (cálculos usados pelo patrão e pelo tratorista)
+function haTanque(o){return o.vazao>0&&o.tanque>0?o.tanque/o.vazao:0;}
+function haFeito(oid){const o=(S.Ord||[]).find(x=>x.id===oid);if(o&&o.haFeito>0)return o.haFeito; // medido pelo piloto
+  return (S.Pd||[]).filter(p=>p.ordem===oid&&p.status!=='recusado').reduce((s,p)=>s+(p.haCalda||0),0);}
+function tabelaOrdem(o){const hT=haTanque(o);
+  return `<table><tr><th>Produto</th><th class="n">Dose/ha</th>${hT?'<th class="n">Por tanque</th>':''}<th class="n">Total</th></tr>`+
+    o.itens.map(i=>`<tr><td>${esc(i.nome)}</td><td class="n">${fq(i.dose)} ${esc(i.un)}</td>${hT?`<td class="n"><b>${fq(+(i.dose*hT).toFixed(3))} ${esc(i.un)}</b></td>`:''}<td class="n">${fq(+(i.dose*o.area).toFixed(3))} ${esc(i.un)}</td></tr>`).join('')+'</table>'+
+    (hT?`<p class="muted" style="margin:6px 0 0">Tanque de ${fq(o.tanque)} L a ${fq(o.vazao)} L/ha = <b>${fq(+hT.toFixed(2))} ha por tanque</b> · ${fq(Math.ceil(o.area/hT*10)/10)} tanques no total</p>`:'');}
+function trOrdens(){
+  const l=(S.Ord||[]).filter(o=>o.status!=='concluida'&&o.status!=='cancelada').sort((a,b)=>a.criadoEm-b.criadoEm);
+  $('trOrdens').innerHTML=l.length?`<div class="card" style="background:#eaf2fb"><h2 style="margin:0">📋 Ordens de aplicação (${l.length})</h2></div>`+l.map(o=>{
+    const feito=haFeito(o.id),rest=Math.max(o.area-feito,0),hT=haTanque(o),sug=+(hT?Math.min(hT,rest||hT):rest||o.area).toFixed(2);
+    return `<div class="card" style="border-left:5px solid #3b7bbf">
+    <h3 style="margin:0 0 4px;font-size:17px">${esc(o.servico||'Aplicação')} · 🌱 ${esc(o.talNome)}</h3>
+    <div class="muted">${fq(o.area)} ha · enviada por ${esc(o.nomePor||'patrão')} em ${new Date(o.criadoEm).toLocaleDateString('pt-BR')}${o.vazao?' · vazão '+fq(o.vazao)+' L/ha':''}</div>
+    ${o.obs?`<p style="margin:6px 0;background:#fff7e6;padding:6px 8px;border-radius:6px">📝 ${esc(o.obs)}</p>`:''}
+    <div class="scroll" style="margin-top:6px">${tabelaOrdem(o)}</div>
+    <p style="margin:8px 0 0"><b>Feito: ${fq(+feito.toFixed(2))} de ${fq(o.area)} ha</b></p>
+    <div class="row" style="align-items:flex-end"><div><label>Hectares desta calda</label><input id="oh_${o.id}" type="number" inputmode="decimal" step="any" min="0" value="${sug}"></div>
+    <div><button class="btn" style="width:100%" onclick="usarOrdem('${o.id}')">🧪 Montar pedido desta calda</button></div></div>
+    <button class="btn sec" onclick="concluirOrdem('${o.id}')">✔ Terminei esta ordem</button></div>`}).join(''):'';}
+function usarOrdem(id){const o=S.Ord.find(x=>x.id===id),ha=num($('oh_'+id).value);if(ha<=0){toast('Informe os hectares desta calda');return;}
+  $('trTal').value=o.tal;$('trItens').innerHTML='';
+  o.itens.forEach(i=>{trAddItem();const d=$('trItens').lastElementChild;const sel=d.querySelector('select');sel.value=i.pid;trUn(sel);d.querySelector('input').value=+(i.dose*ha).toFixed(3);});
+  $('trObs').value=(o.servico||'')+` · ${fq(ha)} ha`;
+  S.ordemSel={id,desc:(o.servico||'Aplicação')+' · '+o.talNome,ha};
+  $('trOrdSel').classList.remove('hide');$('trOrdSel').innerHTML=`📋 Ligado à ordem <b>${esc(S.ordemSel.desc)}</b> (${fq(ha)} ha) <a href="#" onclick="soltarOrdem();return false" style="float:right">✕</a>`;
+  if(o.status==='enviada'){const b=db.batch();b.set(col('ordens').doc(id),{status:'andamento',iniciadaEm:Date.now()},{merge:true});gravar(b);}
+  $('trForm').scrollIntoView({behavior:'smooth'});}
+function soltarOrdem(){S.ordemSel=null;$('trOrdSel').classList.add('hide');}
+function concluirOrdem(id){if(!confirm('Marcar esta ordem como terminada?'))return;const b=db.batch();b.set(col('ordens').doc(id),{status:'concluida',concluidaEm:Date.now()},{merge:true});gravar(b,'Ordem concluída ✔');}
+function trOpcoes(){
+  const t=$('trTal').value;
+  $('trTal').innerHTML='<option value="">— escolha o talhão —</option>'+talhoesOrdenados().map(x=>`<option value="${x.id}">${esc(x.nome)}</option>`).join('');
+  if(S.T[t])$('trTal').value=t;
+  document.querySelectorAll('#trItens select').forEach(sel=>{const v=sel.value;sel.innerHTML=opProd();if(S.C[v])sel.value=v;trUn(sel);});}
+function opProd(){return '<option value="">— produto —</option>'+catalogoOrdenado().map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('');}
+function trUn(sel){const p=S.C[sel.value];sel.parentNode.querySelector('.un').textContent=p?p.un||'':'';}
+function trAddItem(){const d=document.createElement('div');d.className='item';
+  d.innerHTML=`<select onchange="trUn(this)">${opProd()}</select><input type="number" inputmode="decimal" step="any" min="0" placeholder="Qtd"><span class="un"></span><button class="btn sm sec" onclick="this.parentNode.remove()">✕</button>`;
+  $('trItens').appendChild(d);}
+function trSalvar(){
+  const tal=$('trTal').value;if(!tal){toast('Escolha o talhão');return;}
+  const itens=[...document.querySelectorAll('#trItens .item')].map(d=>({pid:d.querySelector('select').value,qtd:num(d.querySelector('input').value)})).filter(i=>i.pid&&i.qtd>0);
+  if(!itens.length){toast('Escolha o produto e a quantidade');return;}
+  if(!confirm('Enviar pedido de baixa:\n'+itens.map(i=>`• ${fq(i.qtd)} ${S.C[i.pid].un||''} de ${S.C[i.pid].nome}`).join('\n')+`\n\nTalhão: ${talNome(tal)}`))return;
+  const b=db.batch();
+  b.set(col('pedidos').doc(),{itens:itens.map(i=>({pid:i.pid,nome:S.C[i.pid].nome,un:S.C[i.pid].un||'',qtd:i.qtd})),tal,talNome:talNome(tal),
+    data:$('trData').value||hoje(),obs:$('trObs').value.trim(),quem:S.uid,nomeQuem:S.nome,origem:'tratorista',status:'pendente',criadoEm:Date.now(),
+    ...(S.ordemSel?{ordem:S.ordemSel.id,ordemDesc:S.ordemSel.desc,haCalda:S.ordemSel.ha}:{})});
+  gravar(b,'Pedido enviado ✔');
+  $('trItens').innerHTML='';trAddItem();$('trObs').value='';soltarOrdem();}
+function trHist(){const h=(S.Pd||[]).sort((a,b)=>b.criadoEm-a.criadoEm).slice(0,30);
+  const st=x=>x._pend?'<span class="wait">⏳ aguardando sinal</span>'
+    :x.status==='pendente'?'<span class="wait">🕐 esperando o estoque</span>'
+    :x.status==='aceito'?`<span class="ok">✔ aceito${x.nomeResp?' por '+esc(x.nomeResp):''}</span>`
+    :`<span class="bad">✖ recusado${x.nomeResp?' por '+esc(x.nomeResp):''}</span>`;
+  $('trHist').innerHTML=h.length?h.map(x=>{const ac=x.itensAceitos;
+    return `<div style="padding:8px 0;border-bottom:1px solid #eee"><b>${esc(x.talNome||talNome(x.tal))}</b> · ${new Date(x.criadoEm).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}
+   <span style="float:right">${st(x)}</span><br>
+   <span class="muted">${x.itens.map((i,k)=>`${fq(i.qtd)} ${esc(i.un)} ${esc(i.nome)}`+(ac&&ac[k]!==undefined&&ac[k]!==i.qtd?` <b>(liberado ${fq(ac[k])})</b>`:'')).join(' · ')}</span>
+   ${x.status==='recusado'&&x.motivo?`<br><span class="bad">Motivo: ${esc(x.motivo)}</span>`:''}</div>`}).join(''):'Nenhum ainda.';}
+
+// ================= PEDIDOS (estoque e patrão) =================
+let pdQtdAnt=-1;
+function escutaPedidos(onChange){S.unsub.push(col('pedidos').onSnapshot(s=>{S.Pd=lista(s);
+  const n=S.Pd.filter(p=>p.status==='pendente').length;if(pdQtdAnt>=0&&n>pdQtdAnt){bip();toast('🚜 Novo pedido de baixa!');}pdQtdAnt=n;onChange();},e=>toast('Erro ao ler pedidos: '+e.code)));}
+function bip(){try{const a=new(window.AudioContext||window.webkitAudioContext)();[0,250].forEach(t=>{const o=a.createOscillator();o.frequency.value=880;o.connect(a.destination);o.start(a.currentTime+t/1000);o.stop(a.currentTime+t/1000+.18);});setTimeout(()=>a.close(),900);}catch(e){}}
+function renderPedidos(el){
+  const pend=(S.Pd||[]).filter(p=>p.status==='pendente').sort((a,b)=>a.criadoEm-b.criadoEm);
+  const resp=(S.Pd||[]).filter(p=>p.status!=='pendente').sort((a,b)=>(b.respondidoEm||0)-(a.respondidoEm||0)).slice(0,15);
+  document.title=(pend.length?`(${pend.length}) `:'')+'Estoque da Fazenda';
+  if($('pdBadge'))$('pdBadge').textContent=pend.length||'';
+  let h=pend.length?`<div class="card" style="background:#fff7e6"><h2>🚜 Pedidos para aprovar (${pend.length})</h2><p class="muted" style="margin:0">Confira, ajuste a quantidade se precisar e aceite ou recuse.</p></div>`
+    :(el==='pdPat'?'<div class="card muted">Nenhum pedido esperando.</div>':'');
+  h+=pend.map(p=>`<div class="card ped" id="pd_${p.id}">
+    <h3>${esc(p.nomeQuem)} · 🌱 ${esc(p.talNome||talNome(p.tal))}</h3>
+    <div class="muted">${fd(p.data)} · enviado ${new Date(p.criadoEm).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}${p.obs?' · '+esc(p.obs):''}</div>
+    ${p.ordemDesc?`<div style="font-size:13px;color:#2a5f93">📋 Ordem: ${esc(p.ordemDesc)}${p.haCalda?' · '+fq(p.haCalda)+' ha':''}</div>`:''}
+    ${p.itens.map((i,k)=>{const s=saldo(i.pid),falta=i.qtd>s;
+      return `<div class="it"><div class="nm"><b>${esc(S.C[i.pid]?S.C[i.pid].nome:i.nome)}</b><br><span class="muted">pediu ${fq(i.qtd)} ${esc(i.un)}</span></div>
+      <div class="sd ${falta?'low':''}">tem ${fq(s)} ${esc(i.un)}${falta?'<br>⚠ falta':''}</div>
+      <input type="number" inputmode="decimal" step="any" min="0" value="${i.qtd}" data-k="${k}"></div>`}).join('')}
+    <div class="row" style="margin-top:4px"><button class="btn" onclick="aceitarPedido('${p.id}')">✔ Aceitar e dar baixa</button>
+    <button class="btn red" onclick="this.closest('.ped').querySelector('.rc').classList.remove('hide')">✖ Recusar</button></div>
+    <div class="rc hide"><label>Motivo da recusa</label><input class="mt" placeholder="ex.: produto acabou, quantidade errada">
+    <button class="btn red" onclick="recusarPedido('${p.id}')">Confirmar recusa</button></div></div>`).join('');
+  if(resp.length)h+=`<div class="card"><h2>Respondidos</h2>${resp.map(p=>`<div style="padding:7px 0;border-bottom:1px solid #eee">
+    <span class="${p.status==='aceito'?'ok':'bad'}">${p.status==='aceito'?'✔ Aceito':'✖ Recusado'}</span> · <b>${esc(p.nomeQuem)}</b> · ${esc(p.talNome||talNome(p.tal))}
+    <span class="muted" style="float:right">${esc(p.nomeResp||'')}</span><br><span class="muted">${p.itens.map((i,k)=>`${fq(p.itensAceitos?p.itensAceitos[k]:i.qtd)} ${esc(i.un)} ${esc(i.nome)}`).join(' · ')}${p.motivo?' · Motivo: '+esc(p.motivo):''}</span></div>`).join('')}</div>`;
+  const ab=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.ped');
+  if(ab&&$(el).contains(ab))return; // não redesenha enquanto alguém digita
+  $(el).innerHTML=h;}
+function aceitarPedido(id){
+  const p=S.Pd.find(x=>x.id===id);if(!p||p.status!=='pendente')return;
+  const q=[...$('pd_'+id).querySelectorAll('.it input')].map(i=>num(i.value));
+  const falta=p.itens.filter((i,k)=>q[k]>saldo(i.pid)+1e-9);
+  if(falta.length&&!confirm('O estoque não tem o suficiente de: '+falta.map(i=>i.nome).join(', ')+'. Aceitar mesmo assim (o saldo fica negativo)?'))return;
+  if(!confirm('Aceitar e dar baixa?'))return;
+  const b=db.batch(),agora=Date.now();
+  p.itens.forEach((i,k)=>{if(q[k]>0)b.set(col('movimentos').doc(),{pid:i.pid,tipo:'B',qtd:q[k],data:p.data,tal:p.tal,obs:p.obs||'',grupo:id,pedido:id,
+    quem:p.quem,nomeQuem:p.nomeQuem,origem:p.origem||'tratorista',aprovadoPor:S.uid,nomeAprov:S.nome,criadoEm:agora});});
+  b.set(col('pedidos').doc(id),{status:'aceito',itensAceitos:q,respondidoPor:S.uid,nomeResp:S.nome,respondidoEm:agora},{merge:true});
+  document.activeElement&&document.activeElement.blur();gravar(b,'Pedido aceito, baixa feita ✔');}
+function recusarPedido(id){
+  const motivo=$('pd_'+id).querySelector('.mt').value.trim();if(!motivo){toast('Escreva o motivo');return;}
+  const b=db.batch();b.set(col('pedidos').doc(id),{status:'recusado',motivo,respondidoPor:S.uid,nomeResp:S.nome,respondidoEm:Date.now()},{merge:true});
+  document.activeElement&&document.activeElement.blur();gravar(b,'Pedido recusado');}
+
+// ================= TABLET DO ESTOQUE =================
+function iniciaEst(){
+  $('appEst').classList.remove('hide');
+  escuta('catalogo',s=>{S.C=mapa(s);agenda(renderEstTablet);});
+  escuta('talhoes',s=>{S.T=mapa(s);agenda(renderEstTablet);});
+  escuta('movimentos',s=>{S.M=lista(s);agenda(renderEstTablet);});
+  escutaPedidos(()=>agenda(renderEstTablet));}
+function renderEstTablet(){
+  renderPedidos('pdEst');
+  const cats=[...new Set(Object.values(S.C).map(p=>p.cat||'Sem categoria'))].sort(ord);
+  const cv=$('esCat').value;$('esCat').innerHTML='<option value="">Todas as categorias</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');$('esCat').value=cats.includes(cv)?cv:'';
+  const b=$('esBusca').value.toLowerCase(),fc=$('esCat').value;
+  const l=catalogoOrdenado().filter(p=>p.nome.toLowerCase().includes(b)&&(!fc||(p.cat||'Sem categoria')===fc))
+    .sort((a,b)=>ord(a.cat||'Sem categoria',b.cat||'Sem categoria')||ord(a.nome,b.nome));
+  let cat=null,h='';
+  l.forEach(p=>{const c=p.cat||'Sem categoria';if(c!==cat){cat=c;h+=`<div class="cat">${esc(c)}</div>`;}
+    const s=saldo(p.id),low=p.min>0&&s<=p.min;
+    h+=`<div class="p"><div><b>${esc(p.nome)}</b>${low?'<br><span class="low">⚠ abaixo do mínimo ('+fq(p.min)+')</span>':''}</div><div class="q ${low||s<0?'low':''}">${fq(s)} <small style="font-size:15px">${esc(p.un||'')}</small></div></div>`;});
+  $('esLista').innerHTML=h||'<p class="muted">Nenhum produto.</p>';
+  const sd=S.M.filter(m=>m.tipo==='B').sort((a,b)=>b.data.localeCompare(a.data)||(b.criadoEm||0)-(a.criadoEm||0)).slice(0,40);
+  $('esSaidas').innerHTML=sd.length?'<tr><th>Data</th><th>Produto</th><th class="n">Qtd</th><th>Talhão / quem</th></tr>'+sd.map(m=>{const p=S.C[m.pid]||{nome:'?'};
+    return `<tr><td>${fd(m.data)}</td><td>${esc(p.nome)}</td><td class="n">${fq(m.qtd)} ${esc(p.un||'')}</td><td>${esc(talNome(m.tal)||'—')}<br><span class="muted">${esc(m.nomeQuem||'')}${m.nomeAprov?' · liberado por '+esc(m.nomeAprov):''}</span></td></tr>`}).join(''):'<tr><td class="muted">Nenhuma saída.</td></tr>';}
+
+// ================= PATRÃO =================
+let tipo='E',ftipo='R',talAberto='';
+function iniciaPatrao(){
+  $('appPat').classList.remove('hide');$('mData').value=hoje();$('fData').value=hoje();$('fMes').value=hoje().slice(0,7);
+  escuta('catalogo',s=>{S.C=mapa(s);agenda(render);});
+  escuta('talhoes',s=>{S.T=mapa(s);agenda(render);});
+  escuta('movimentos',s=>{S.M=lista(s);agenda(render);});
+  escuta('precos',s=>{S.P=mapa(s);agenda(render);});
+  escuta('financeiro',s=>{S.F=lista(s);agenda(render);});
+  escuta('usuarios',s=>{S.U=mapa(s);agenda(render);});
+  escutaPedidos(()=>agenda(render));
+  escuta('ordens',s=>{S.Ord=lista(s);agenda(render);});
+  escuta('producao',s=>{S.Pr=lista(s);agenda(render);});
+  if(!$('oItens').children.length)oAddItem();
+  setG('insumos');}
+
+// --- ordens de aplicação (patrão)
+function oAddItem(){const d=document.createElement('div');d.className='item';
+  d.innerHTML=`<select onchange="oUn(this);oResumo()">${opProd()}</select><input type="number" inputmode="decimal" step="any" min="0" placeholder="Dose/ha" oninput="oResumo()"><span class="un"></span><button class="btn sm sec" onclick="this.parentNode.remove();oResumo()">✕</button>`;
+  $('oItens').appendChild(d);}
+function oUn(sel){const p=S.C[sel.value];sel.parentNode.querySelector('.un').textContent=p?(p.un||'')+'/ha':'';}
+function oTalMudou(){const t=S.T[$('oTal').value];if(t&&t.area)$('oArea').value=t.area;oResumo();}
+function oDados(){return{area:num($('oArea').value),vazao:num($('oVazao').value),tanque:num($('oTanque').value),
+  itens:[...document.querySelectorAll('#oItens .item')].map(d=>{const p=S.C[d.querySelector('select').value];return p?{pid:p.id,nome:p.nome,un:p.un||'',dose:num(d.querySelector('input').value)}:null;}).filter(i=>i&&i.dose>0)};}
+function oResumo(){const o=oDados();
+  if(!o.itens.length||!o.area){$('oRes').innerHTML='';return;}
+  const falta=o.itens.filter(i=>i.dose*o.area>saldo(i.pid));
+  $('oRes').innerHTML='<div class="scroll">'+tabelaOrdem(o)+'</div>'+(falta.length?`<p class="low" style="margin:6px 0 0">⚠ Estoque não dá para: ${falta.map(i=>`${esc(i.nome)} (tem ${fq(saldo(i.pid))} ${esc(i.un)})`).join(', ')}</p>`:'');}
+function enviarOrdem(){
+  const para=$('oPara').value,tal=$('oTal').value,o=oDados();
+  if(!para){toast('Escolha o tratorista');return;}if(!tal){toast('Escolha o talhão');return;}
+  if(!o.area){toast('Informe a área');return;}if(!o.itens.length){toast('Coloque os produtos e a dose');return;}
+  const b=db.batch();
+  b.set(col('ordens').doc(),{...o,para,paraNome:S.U[para]?S.U[para].nome:'',tal,talNome:talNome(tal),servico:$('oServ').value.trim()||'Aplicação',
+    obs:$('oObs').value.trim(),status:'enviada',criadoEm:Date.now(),criadoPor:S.uid,nomePor:S.nome});
+  gravar(b,'Ordem enviada para '+(S.U[para]?S.U[para].nome:'')+' ✔');
+  $('oItens').innerHTML='';oAddItem();$('oObs').value='';$('oRes').innerHTML='';}
+function cancelarOrdem(id){if(!confirm('Cancelar esta ordem? Ela some do tablet do tratorista.'))return;const b=db.batch();b.set(col('ordens').doc(id),{status:'cancelada'},{merge:true});gravar(b,'Ordem cancelada');}
+function excluirOrdem(id){if(!confirm('Excluir esta ordem do histórico?'))return;const b=db.batch();b.delete(col('ordens').doc(id));gravar(b,'Ordem excluída');}
+function renderOrdens(){
+  const trat=Object.values(S.U).filter(u=>u.papel==='tratorista').sort((a,b)=>ord(a.nome,b.nome));
+  const v=$('oPara').value;$('oPara').innerHTML=trat.length?'<option value="">— escolha —</option>'+trat.map(u=>`<option value="${u.id}">${esc(u.nome)}</option>`).join(''):'<option value="">— crie um tratorista na aba Usuários —</option>';if(S.U[v])$('oPara').value=v;
+  const tv=$('oTal').value;$('oTal').innerHTML='<option value="">— escolha —</option>'+talhoesOrdenados().map(t=>`<option value="${t.id}">${esc(t.nome)}${t.area?` (${fq(t.area)} ha)`:''}</option>`).join('');if(S.T[tv])$('oTal').value=tv;
+  document.querySelectorAll('#oItens select').forEach(sel=>{if(document.activeElement===sel)return;const x=sel.value;sel.innerHTML=opProd();if(S.C[x])sel.value=x;oUn(sel);});
+  const nm={enviada:['🕐 Enviada','wait'],andamento:['🚜 Em andamento','wait'],concluida:['✔ Concluída','ok'],cancelada:['✖ Cancelada','bad']};
+  const l=(S.Ord||[]).sort((a,b)=>b.criadoEm-a.criadoEm).slice(0,40);
+  $('oLista').innerHTML=l.length?'<div class="card"><h2>Ordens enviadas</h2>'+l.map(o=>{const f=haFeito(o.id),s=nm[o.status]||[o.status,''];
+    const ins=o.itens.map(i=>{const usado=(S.Pd||[]).filter(p=>p.ordem===o.id&&p.status==='aceito').reduce((s,p)=>{const k=p.itens.findIndex(x=>x.pid===i.pid);return s+(k>=0?(p.itensAceitos?p.itensAceitos[k]:p.itens[k].qtd):0);},0);
+      return `${esc(i.nome)} ${fq(i.dose)} ${esc(i.un)}/ha`+(usado?` <span class="muted">(saiu ${fq(usado)})</span>`:'');}).join(' · ');
+    return `<div style="padding:10px 0;border-bottom:1px solid #eee"><b>${esc(o.servico)} · 🌱 ${esc(o.talNome)}</b> → ${esc(o.paraNome)}
+    <span class="${s[1]}" style="float:right">${s[0]}</span><br>
+    <span class="muted">${new Date(o.criadoEm).toLocaleDateString('pt-BR')} · feito ${fq(+f.toFixed(2))} de ${fq(o.area)} ha${o.haFeito>0?' (medido pelo piloto)':''}${o.obs?' · '+esc(o.obs):''}</span><br>
+    <span style="font-size:13px">${ins}</span><br>
+    ${o.status==='enviada'||o.status==='andamento'?`<button class="btn sm sec" style="margin-top:6px" onclick="cancelarOrdem('${o.id}')">Cancelar</button>`:`<button class="btn sm sec" style="margin-top:6px" onclick="excluirOrdem('${o.id}')">Excluir</button>`}</div>`}).join('')+'</div>':'';}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>aba(b.dataset.t));
+function aba(t){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.querySelectorAll('#appPat main>section').forEach(s=>s.classList.toggle('hide',s.id!=='t-'+t));render();window.scrollTo(0,0);}
+
+function render(){
+  if(S.papel!=='patrao')return;
+  calcCustos();
+  const prods=catalogoOrdenado(),tals=talhoesOrdenados();
+  const keep=(id,html)=>{const v=$(id).value;$(id).innerHTML=html;if([...$(id).options].some(o=>o.value===v))$(id).value=v;};
+  keep('mProd',prods.length?prods.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join(''):'<option value="">— cadastre um produto na aba Estoque —</option>');
+  const opT=tals.map(t=>`<option value="${t.id}">${esc(t.nome)}${t.area?` (${fq(t.area)} ha)`:''}</option>`).join('');
+  keep('mTal','<option value="">— nenhum (venda, perda, outro) —</option>'+opT);
+  keep('fTal','<option value="">— geral (sem talhão) —</option>'+opT);
+  keep('hProd','<option value="">Todos</option>'+prods.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join(''));
+  const quem=[...new Map(S.M.filter(m=>m.quem).map(m=>[m.quem,m.nomeQuem||'?'])).entries()];
+  keep('hQuem','<option value="">Todos</option>'+quem.map(([id,n])=>`<option value="${id}">${esc(n)}</option>`).join(''));
+  $('cats').innerHTML=[...new Set(prods.map(p=>p.cat).filter(Boolean))].map(c=>`<option>${esc(c)}</option>`).join('');
+  $('fcats').innerHTML=[...new Set(S.F.map(f=>f.cat).filter(Boolean))].map(c=>`<option>${esc(c)}</option>`).join('');
+  mostraSaldo();renderEst();renderFin();renderTal();renderHis();renderUsu();renderPedidos('pdPat');renderOrdens();renderDesp();renderProd();
+  $('info').textContent=`${prods.length} produtos · ${tals.length} talhões · ${S.M.length} movimentações · ${S.F.length} lançamentos financeiros`;}
+
+// --- movimentação
+function setTipo(t){tipo=t;$('bEnt').classList.toggle('on',t==='E');$('bBx').classList.toggle('on',t==='B');
+  $('mFinTxt').textContent=t==='E'?'Lançar no financeiro como despesa (compra)':'Lançar no financeiro como receita (venda)';
+  $('mValL').textContent=t==='E'?'Valor unitário pago (R$)':'Valor unitário (R$) – só se for venda';
+  $('mFin').checked=false;$('mTalBox').classList.toggle('hide',t!=='B');mostraSaldo();}
+function mostraSaldo(){const p=prod($('mProd').value);$('mSaldo').textContent=p?`Saldo atual: ${fq(saldo(p.id))} ${p.un||''}`:'';atualizaFinChk();}
+function atualizaFinChk(){
+  const comTal=tipo==='B'&&$('mTal').value;$('mFinBox').classList.toggle('hide',!!comTal);
+  const p=prod($('mProd').value);if(!comTal||!p){$('mCusto').textContent='';return;}
+  const a=K.avg[p.id]||0,q=num($('mQtd').value);
+  $('mCusto').innerHTML=a>0?`Custo no talhão: <b>${fm(q*a)}</b> (${fm(a)} por ${esc(p.un||'un')}, custo médio das compras).`
+    :'<span class="low">Este produto ainda não tem preço nas entradas, então o custo no talhão fica R$ 0 até você lançar uma entrada com preço.</span>';}
+$('mProd').onchange=mostraSaldo;$('mQtd').oninput=atualizaFinChk;
+function salvarMov(){
+  const pid=$('mProd').value,p=prod(pid);if(!p){toast('Cadastre um produto primeiro (aba Estoque)');return;}
+  const qtd=num($('mQtd').value),val=num($('mVal').value);if(qtd<=0){toast('Informe a quantidade');return;}
+  if(tipo==='B'&&qtd>saldo(pid)+1e-9&&!confirm(`A baixa (${fq(qtd)}) é maior que o saldo (${fq(saldo(pid))}). Salvar mesmo assim?`))return;
+  const tal=tipo==='B'?$('mTal').value:'';
+  if($('mFin').checked&&!tal&&val<=0){toast('Informe o valor unitário para lançar no financeiro');return;}
+  const b=db.batch(),ref=col('movimentos').doc(),data=$('mData').value||hoje();
+  b.set(ref,{pid,tipo,qtd,data,tal,obs:$('mObs').value.trim(),quem:S.uid,nomeQuem:S.nome,origem:'patrao',criadoEm:Date.now()});
+  if(val>0)b.set(col('precos').doc(ref.id),{val});
+  if($('mFin').checked&&!tal)b.set(col('financeiro').doc(),{tipo:tipo==='E'?'D':'R',desc:(tipo==='E'?'Compra: ':'Venda: ')+p.nome+` (${fq(qtd)} ${p.un||''})`,
+    val:+(qtd*val).toFixed(2),cat:tipo==='E'?'Insumos':'Venda',...(tipo==='E'?{grupo:'insumos',sub:p.cat||'Outros insumos',pid,qtd}:{}),data,mid:ref.id,criadoEm:Date.now()});
+  gravar(b,(tipo==='E'?'Entrada':'Baixa')+' registrada'+(tal?' para '+talNome(tal):'')+' ✔');
+  $('mQtd').value='';$('mVal').value='';$('mObs').value='';$('mFin').checked=false;}
+function excluirMov(id){const m=S.M.find(x=>x.id===id);if(!m)return;const fs=S.F.filter(f=>f.mid===id);
+  if(!confirm('Excluir esta movimentação?'+(fs.length?' O lançamento financeiro ligado a ela também será excluído.':'')))return;
+  const b=db.batch();b.delete(col('movimentos').doc(id));if(S.P[id])b.delete(col('precos').doc(id));fs.forEach(f=>b.delete(col('financeiro').doc(f.id)));gravar(b,'Movimentação excluída');}
+
+// --- produtos
+function salvarProd(){const nome=$('pNome').value.trim();if(!nome){toast('Informe o nome');return;}
+  const id=$('pId').value,dados={nome,un:$('pUn').value.trim(),cat:$('pCat').value.trim(),min:num($('pMin').value)};
+  if(!id&&Object.values(S.C).some(p=>p.nome.toLowerCase()===nome.toLowerCase())){toast('Já existe um produto com esse nome');return;}
+  const b=db.batch();b.set(id?col('catalogo').doc(id):col('catalogo').doc(),dados,{merge:true});gravar(b,id?'Produto atualizado':'Produto cadastrado');limparProd();}
+function editarProd(id){const p=prod(id);$('pId').value=id;$('pNome').value=p.nome;$('pUn').value=p.un||'';$('pCat').value=p.cat||'';$('pMin').value=p.min||'';
+  $('pTitulo').textContent='Editar produto';$('pCancel').classList.remove('hide');window.scrollTo(0,0);}
+function limparProd(){['pId','pNome','pUn','pCat','pMin'].forEach(i=>$(i).value='');$('pTitulo').textContent='Cadastrar produto';$('pCancel').classList.add('hide');}
+function excluirProd(id){const p=prod(id),ms=S.M.filter(m=>m.pid===id);
+  if(!confirm(`Excluir "${p.nome}"`+(ms.length?` e suas ${ms.length} movimentações?`:'?')))return;
+  const b=db.batch();b.delete(col('catalogo').doc(id));ms.slice(0,450).forEach(m=>{b.delete(col('movimentos').doc(m.id));if(S.P[m.id])b.delete(col('precos').doc(m.id));});gravar(b,'Produto excluído');}
+function movRapido(id,t){aba('mov');$('mProd').value=id;setTipo(t);$('mQtd').focus();}
+function renderEst(){
+  const b=$('busca').value.toLowerCase();
+  const l=catalogoOrdenado().filter(p=>(p.nome+' '+(p.cat||'')).toLowerCase().includes(b)).sort((a,b)=>ord(a.cat||'',b.cat||'')||ord(a.nome,b.nome));
+  if(!Object.keys(S.C).length){$('tEst').innerHTML='<tr><td class="muted">Nenhum produto cadastrado ainda.</td></tr>';return;}
+  let tot=0;
+  $('tEst').innerHTML='<tr><th>Produto</th><th class="n">Saldo</th><th class="n">Valor est.</th><th></th></tr>'+l.map(p=>{
+    const s=saldo(p.id),a=K.avg[p.id]||0,v=s>0?s*a:0;tot+=v;const low=p.min>0&&s<=p.min;
+    return `<tr><td><b>${esc(p.nome)}</b><br><span class="muted">${esc(p.cat||'')}${p.min?` · mín ${fq(p.min)}`:''}${a?` · ${fm(a)}/${esc(p.un||'un')}`:''}</span></td>
+    <td class="n ${low||s<0?'low':''}">${fq(s)} ${esc(p.un||'')}${low?' ⚠':''}</td><td class="n">${a?fm(v):'—'}</td>
+    <td class="n"><button class="btn sm" onclick="movRapido('${p.id}','E')">⬇</button>
+    <button class="btn sm" style="background:#b5562b" onclick="movRapido('${p.id}','B')">⬆</button>
+    <button class="btn sm sec" onclick="editarProd('${p.id}')">✎</button>
+    <button class="btn sm sec" onclick="excluirProd('${p.id}')">🗑</button></td></tr>`}).join('')
+    +`<tr><td colspan="2"><b>Total em estoque (custo médio)</b></td><td class="n"><b>${fm(tot)}</b></td><td></td></tr>`;}
+
+// --- finanças
+function setFTipo(t){ftipo=t;$('bRec').classList.toggle('on',t==='R');$('bDes').classList.toggle('on',t==='D');}
+function salvarFin(){const val=num($('fVal').value),desc=$('fDesc').value.trim();if(!desc||val<=0){toast('Preencha descrição e valor');return;}
+  const b=db.batch();b.set(col('financeiro').doc(),{tipo:ftipo,desc,val,cat:$('fCat').value.trim()||'Geral',data:$('fData').value||hoje(),tal:$('fTal').value||'',criadoEm:Date.now()});
+  const dl=$('fData').value||hoje();if(!dl.startsWith($('fMes').value)){$('fMes').value=dl.slice(0,7);}
+  gravar(b,'Lançamento salvo ✔');$('fDesc').value='';$('fVal').value='';$('fCat').value='';}
+function excluirFin(id){if(!confirm('Excluir este lançamento?'))return;const b=db.batch();b.delete(col('financeiro').doc(id));gravar(b,'Lançamento excluído');}
+function renderFin(){
+  const mes=$('fMes').value||hoje().slice(0,7),l=S.F.filter(f=>f.data.startsWith(mes)).sort((a,b)=>b.data.localeCompare(a.data)||(b.criadoEm||0)-(a.criadoEm||0));
+  if(l.some(f=>Date.now()-(f.criadoEm||0)<8000)){clearTimeout(window._tNovo);window._tNovo=setTimeout(()=>{if(S.papel==='patrao'){renderFin();renderDesp();}},8500);}
+  const rec=l.filter(f=>f.tipo==='R').reduce((s,f)=>s+f.val,0),des=l.filter(f=>f.tipo==='D').reduce((s,f)=>s+f.val,0);
+  const geral=S.F.reduce((s,f)=>s+(f.tipo==='R'?f.val:-f.val),0);
+  $('kpis').innerHTML=`<div class="kpi"><small>Receitas do mês</small><b class="pos">${fm(rec)}</b></div>
+  <div class="kpi"><small>Despesas do mês</small><b class="neg">${fm(des)}</b></div>
+  <div class="kpi"><small>Resultado do mês</small><b class="${rec-des>=0?'pos':'neg'}">${fm(rec-des)}</b></div>
+  <div class="kpi"><small>Saldo acumulado</small><b class="${geral>=0?'pos':'neg'}">${fm(geral)}</b></div>`;
+  $('tFin').innerHTML=l.length?'<tr><th>Data</th><th>Descrição</th><th class="n">Valor</th><th></th></tr>'+l.map(f=>`<tr${Date.now()-(f.criadoEm||0)<8000?' class="novo"':''}><td>${fd(f.data)}</td>
+    <td>${esc(f.desc)}<br><span class="tag ${f.tipo==='R'?'r':'d'}">${f.tipo==='R'?'Receita':'Despesa'}</span> <span class="muted">${esc(f.cat)}${f.tal?' · 🌱 '+esc(talNome(f.tal)):''}${f.rateio?' · ↔ rateado':''}</span></td>
+    <td class="n ${f.tipo==='R'?'pos':'neg'}">${f.tipo==='R'?'+':'−'} ${fm(f.val)}</td><td class="n"><button class="btn sm sec" onclick="excluirFin('${f.id}')">🗑</button></td></tr>`).join('')
+    :'<tr><td class="muted">Nenhum lançamento neste mês.</td></tr>';
+  const c={};l.forEach(f=>{const k=f.cat||'Geral';c[k]=c[k]||{r:0,d:0};c[k][f.tipo==='R'?'r':'d']+=f.val;});
+  const ks=Object.keys(c).sort((a,b)=>(c[b].d+c[b].r)-(c[a].d+c[a].r));
+  $('tCat').innerHTML=ks.length?'<tr><th>Categoria</th><th class="n">Receitas</th><th class="n">Despesas</th></tr>'+ks.map(k=>`<tr><td>${esc(k)}</td><td class="n pos">${c[k].r?fm(c[k].r):''}</td><td class="n neg">${c[k].d?fm(c[k].d):''}</td></tr>`).join(''):'<tr><td class="muted">—</td></tr>';}
+
+// --- despesas adicionais (peças, funcionários, combustível, outras)
+const GR={insumos:{n:'Insumos',i:'🧪'},pecas:{n:'Peças e manutenção',i:'🔧'},func:{n:'Funcionários',i:'👷'},comb:{n:'Combustível',i:'⛽'},outros:{n:'Outras despesas',i:'📦'}};
+let grupo='insumos';
+const grupoDe=f=>f.grupo||(f.mid&&f.tipo==='D'?'insumos':null); // compras antigas pela aba Entrada contam como insumos
+function dInsOnde(){const est=grupo==='insumos'&&$('dEstChk').checked&&!$('dEstBox').classList.contains('hide');$('dOndeBox').classList.toggle('hide',est);$('dOndeEst').classList.toggle('hide',!est);}
+function dInsPrevia(){if(grupo!=='insumos'){$('dIPrev').textContent='';return;}const p=S.C[$('dProd').value],q=num($('dQtd').value),v=num($('dVal').value);
+  $('dIPrev').innerHTML=p&&q&&v?`= <b>${fm(v/q)}</b> por ${esc(p.un||'un')}${K.avg[p.id]?` · custo médio atual ${fm(K.avg[p.id])}`:''}`:'';}
+function setG(g){grupo=g;document.querySelectorAll('#dSeg button').forEach(b=>b.classList.toggle('on',b.dataset.g===g));
+  document.querySelectorAll('#dSeg button').forEach(b=>{b.classList.remove('ent');if(b.dataset.g===g)b.classList.add('ent');});
+  $('dFuncBox').classList.toggle('hide',g!=='func');$('dMaqBox').classList.toggle('hide',g==='func'||g==='insumos');
+  $('dInsBox').classList.toggle('hide',g!=='insumos');$('dDescBox').classList.toggle('hide',g==='insumos');
+  $('dValL').textContent=g==='insumos'?'Valor total da compra (R$)':'Valor (R$)';
+  $('dEstBox').classList.toggle('hide',!(LIC&&LIC.mod.estoque));dInsOnde();dInsPrevia();
+  if(g==='insumos'){if(!$('dMes').value)return;}
+  $('dLitBox').classList.toggle('hide',g!=='comb');$('dFornBox').classList.toggle('hide',g==='comb');
+  if(g==='insumos')return;
+  $('dDescL').textContent={pecas:'Peça ou serviço',func:'Observação (opcional)',comb:'Combustível',outros:'Descrição'}[g];
+  $('dDesc').placeholder={pecas:'ex.: Rolamento da roda, troca de óleo',func:'ex.: referente a outubro',comb:'ex.: Diesel S10',outros:'ex.: Energia, internet, aluguel'}[g];
+  if(g==='comb'&&!$('dDesc').value)$('dDesc').value='Diesel';}
+function salvarDesp(){
+  const val=num($('dVal').value);if(val<=0){toast('Informe o valor');return;}
+  const onde=$('dOnde').value,d={tipo:'D',grupo,cat:GR[grupo].n,val,data:$('dData').value||hoje(),tal:onde&&onde!=='rateio'?onde:'',rateio:onde==='rateio',criadoEm:Date.now()};
+  const txt=$('dDesc').value.trim();
+  if(grupo==='insumos'){
+    const p=S.C[$('dProd').value],q=num($('dQtd').value);if(!p){toast('Escolha o produto');return;}if(q<=0){toast('Informe a quantidade');return;}
+    const forn=$('dIForn').value.trim(),nota=$('dNota').value.trim(),est=$('dEstChk').checked&&!$('dEstBox').classList.contains('hide');
+    Object.assign(d,{cat:'Insumos',sub:p.cat||'Outros insumos',desc:`${p.nome} (${fq(q)} ${p.un||''})`+(nota?' · NF '+nota:''),fornecedor:forn,qtd:q,pid:p.id});
+    const b=db.batch();
+    if(est){d.tal='';d.rateio=false;const mr=col('movimentos').doc();
+      b.set(mr,{pid:p.id,tipo:'E',qtd:q,data:d.data,tal:'',obs:'Compra'+(forn?' · '+forn:'')+(nota?' · NF '+nota:''),quem:S.uid,nomeQuem:S.nome,origem:'patrao',criadoEm:Date.now()});
+      b.set(col('precos').doc(mr.id),{val:+(val/q).toFixed(4)});d.mid=mr.id;}
+    b.set(col('financeiro').doc(),d);gravar(b,'🧪 Compra de insumo salva'+(est?' e estoque atualizado ✔':' ✔'));
+    ['dVal','dQtd','dNota'].forEach(i=>$(i).value='');$('dIPrev').textContent='';return;}
+  if(grupo==='func'){const f=$('dFunc').value.trim();if(!f){toast('Informe o funcionário');return;}d.func=f;d.sub=$('dSub').value;d.desc=`${d.sub} – ${f}`+(txt?' ('+txt+')':'');}
+  else{if(!txt){toast('Preencha a descrição');return;}d.desc=txt;d.maquina=$('dMaq').value.trim();
+    if(grupo==='comb'){d.litros=num($('dLit').value);if(d.litros)d.desc+=` (${fq(d.litros)} L)`;}else d.fornecedor=$('dForn').value.trim();
+    if(d.maquina)d.desc+=' · '+d.maquina;}
+  const b=db.batch();b.set(col('financeiro').doc(),d);gravar(b,GR[grupo].i+' Despesa salva ✔');
+  ['dVal','dLit','dForn'].forEach(i=>$(i).value='');$('dDesc').value=grupo==='comb'?'Diesel':'';}
+function renderDesp(){
+  if(!$('dMes').value)$('dMes').value=hoje().slice(0,7);if(!$('dData').value)$('dData').value=hoje();
+  const ov=$('dOnde').value;
+  $('dOnde').innerHTML='<option value="">Geral da fazenda (não entra no custo dos talhões)</option><option value="rateio">↔ Ratear entre todos os talhões pela área</option>'+
+    talhoesOrdenados().map(t=>`<option value="${t.id}">Só no ${esc(t.nome)}</option>`).join('');
+  if([...$('dOnde').options].some(o=>o.value===ov))$('dOnde').value=ov;
+  const uniq=k=>[...new Set(S.F.map(f=>f[k]).filter(Boolean))].sort(ord).map(x=>`<option>${esc(x)}</option>`).join('');
+  const pv=$('dProd').value;$('dProd').innerHTML='<option value="">— produto —</option>'+catalogoOrdenado().map(p=>`<option value="${p.id}">${esc(p.nome)}${p.cat?' · '+esc(p.cat):''} (${esc(p.un||'')})</option>`).join('');if(S.C[pv])$('dProd').value=pv;
+  $('funcs').innerHTML=uniq('func');$('maqs').innerHTML=uniq('maquina');$('forns').innerHTML=uniq('fornecedor');
+  const mes=$('dMes').value,l=S.F.filter(f=>grupoDe(f)&&f.data.startsWith(mes)).sort((a,b)=>b.data.localeCompare(a.data)||(b.criadoEm||0)-(a.criadoEm||0));
+  const tot={};Object.keys(GR).forEach(g=>tot[g]=0);l.forEach(f=>tot[grupoDe(f)]+=f.val);
+  $('dKpis').innerHTML=Object.keys(GR).map(g=>`<div class="kpi"><small>${GR[g].i} ${GR[g].n}</small><b class="neg">${fm(tot[g])}</b></div>`).join('');
+  $('dLista').innerHTML=l.length?'<tr><th>Data</th><th>Despesa</th><th class="n">Valor</th><th></th></tr>'+l.map(f=>`<tr${Date.now()-(f.criadoEm||0)<8000?' class="novo"':''}><td>${fd(f.data)}</td>
+    <td>${GR[grupoDe(f)]?GR[grupoDe(f)].i:''} ${esc(f.desc)}<br><span class="muted">${grupoDe(f)==='insumos'?esc(f.sub||f.cat||'')+' · ':''}${f.mid?'📦 entrou no estoque':f.rateio?'↔ rateado entre os talhões':f.tal?'🌱 '+esc(talNome(f.tal)):'geral'}${f.fornecedor?' · '+esc(f.fornecedor):''}</span></td>
+    <td class="n neg">${fm(f.val)}</td><td class="n"><button class="btn sm sec" onclick="excluirFin('${f.id}')">🗑</button></td></tr>`).join(''):'<tr><td class="muted">Nenhuma despesa neste mês.</td></tr>';
+  const por=(k,filtro)=>{const o={};l.filter(filtro).forEach(f=>{const x=f[k]||'(sem nome)';o[x]=o[x]||{v:0,l:0};o[x].v+=f.val;o[x].l+=f.litros||0;});return Object.entries(o).sort((a,b)=>b[1].v-a[1].v);};
+  const pm=por('maquina',f=>f.grupo==='pecas'||f.grupo==='comb');
+  $('dMaqT').innerHTML=pm.length?'<tr><th>Máquina</th><th class="n">Litros</th><th class="n">Total</th></tr>'+pm.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="n">${v.l?fq(v.l)+' L':''}</td><td class="n">${fm(v.v)}</td></tr>`).join(''):'<tr><td class="muted">—</td></tr>';
+  const ins={};l.filter(f=>grupoDe(f)==='insumos').forEach(f=>{const p=f.pid?S.C[f.pid]:null;const k=f.sub||(p&&p.cat)||(f.cat&&f.cat!=='Insumos'&&f.cat!=='Compra de insumos'?f.cat:'Outros insumos');ins[k]=(ins[k]||0)+f.val;});
+  const ik=Object.keys(ins).sort((a,b)=>ins[b]-ins[a]),it=ik.reduce((s,k)=>s+ins[k],0);
+  $('dInsT').innerHTML=ik.length?'<tr><th>Tipo</th><th class="n">Total</th><th class="n">%</th></tr>'+ik.map(k=>`<tr><td>${esc(k)}</td><td class="n">${fm(ins[k])}</td><td class="n">${Math.round(ins[k]/it*100)}%</td></tr>`).join(''):'<tr><td class="muted">—</td></tr>';
+  const pf=por('func',f=>f.grupo==='func');
+  $('dFuncT').innerHTML=pf.length?'<tr><th>Funcionário</th><th class="n">Total</th></tr>'+pf.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="n">${fm(v.v)}</td></tr>`).join(''):'<tr><td class="muted">—</td></tr>';}
+
+// --- produção por talhão
+const scDe=p=>p.un==='sc'?p.qtd:p.un==='kg'?p.qtd/60:p.qtd*1000/60;   // tudo em sacas de 60 kg
+function prTalMudou(){const t=S.T[$('prTal').value];if(t&&t.cult&&!$('prCult').value)$('prCult').value=t.cult;prPrevia();}
+function prPrevia(){const t=S.T[$('prTal').value],q=num($('prQtd').value);if(!t||!q){$('prPrev').textContent='';return;}
+  const sc=scDe({qtd:q,un:$('prUn').value}),pr=num($('prPreco').value);
+  $('prPrev').innerHTML=`= <b>${fq(+sc.toFixed(1))} sacas</b>`+(t.area?` · <b>${fq(+(sc/t.area).toFixed(1))} sc/ha</b> em ${fq(t.area)} ha`:'')+(pr?` · valor estimado ${fm(sc*pr)}`:'');}
+function salvarProducao(){
+  const tal=$('prTal').value,qtd=num($('prQtd').value),un=$('prUn').value;
+  if(!tal){toast('Escolha o talhão');return;}if(qtd<=0){toast('Informe a quantidade colhida');return;}
+  const d={tal,talNome:talNome(tal),cult:$('prCult').value.trim(),qtd,un,data:$('prData').value||hoje(),umi:num($('prUmi').value),preco:num($('prPreco').value),obs:$('prObs').value.trim(),criadoEm:Date.now()};
+  const b=db.batch(),ref=col('producao').doc();
+  if($('prEstChk').checked){const p=S.C[$('prEst').value];if(!p){toast('Escolha o produto do estoque');return;}
+    const sc=scDe(d),u=(p.un||'').toLowerCase(),qe=u==='kg'?sc*60:u==='t'?sc*0.06:u==='sc'?sc:qtd;
+    const mr=col('movimentos').doc();b.set(mr,{pid:p.id,tipo:'E',qtd:+qe.toFixed(3),data:d.data,tal:'',obs:'Colheita '+d.talNome+(d.cult?' · '+d.cult:''),quem:S.uid,nomeQuem:S.nome,origem:'colheita',producao:ref.id,criadoEm:Date.now()});d.mov=mr.id;}
+  b.set(ref,d);gravar(b,'🌾 Produção salva ✔');['prQtd','prUmi','prObs'].forEach(i=>$(i).value='');$('prPrev').textContent='';}
+function excluirProducao(id){const p=S.Pr.find(x=>x.id===id);if(!confirm('Excluir este lançamento de produção?'+(p.mov?' A entrada no estoque ligada a ele também será excluída.':'')))return;
+  const b=db.batch();b.delete(col('producao').doc(id));if(p.mov)b.delete(col('movimentos').doc(p.mov));gravar(b,'Produção excluída');}
+function prodTal(id,cult){return (S.Pr||[]).filter(p=>p.tal===id&&(!cult||p.cult===cult));}
+function renderProd(){
+  const keep=(id,html)=>{const v=$(id).value;$(id).innerHTML=html;if([...$(id).options].some(o=>o.value===v))$(id).value=v;};
+  keep('prTal','<option value="">— escolha —</option>'+talhoesOrdenados().map(t=>`<option value="${t.id}">${esc(t.nome)}${t.area?` (${fq(t.area)} ha)`:''}</option>`).join(''));
+  keep('prEst','<option value="">— produto —</option>'+catalogoOrdenado().map(p=>`<option value="${p.id}">${esc(p.nome)} (${esc(p.un||'')})</option>`).join(''));
+  const cults=[...new Set((S.Pr||[]).map(p=>p.cult).concat(Object.values(S.T).map(t=>t.cult)).filter(Boolean))].sort(ord);
+  $('cults').innerHTML=cults.map(c=>`<option>${esc(c)}</option>`).join('');
+  keep('prFiltro','<option value="">Todas</option>'+[...new Set((S.Pr||[]).map(p=>p.cult).filter(Boolean))].sort(ord).map(c=>`<option>${esc(c)}</option>`).join(''));
+  if(!$('prData').value)$('prData').value=hoje();
+  const cult=$('prFiltro').value;PER=[$('prDe').value,$('prAte').value];
+  let tA=0,tSc=0,tCus=0,tVal=0;
+  const lin=talhoesOrdenados().map(t=>{const L=prodTal(t.id,cult);const sc=L.reduce((s,p)=>s+scDe(p),0);
+    const val=L.reduce((s,p)=>s+(p.preco?scDe(p)*p.preco:0),0);const cus=resumo(lancTal(t.id)).d;
+    if(!L.length)return '';tA+=t.area||0;tSc+=sc;tCus+=cus;tVal+=val;
+    return `<tr><td><b>${esc(t.nome)}</b><br><span class="muted">${t.area?fq(t.area)+' ha':''}</span></td><td class="n"><b>${fq(+sc.toFixed(1))} sc</b></td>
+    <td class="n">${t.area?'<b>'+fq(+(sc/t.area).toFixed(1))+'</b> sc/ha':'—'}</td><td class="n">${sc?fm(cus/sc):'—'}</td><td class="n">${val?fm(val):'—'}</td>
+    <td class="n ${val-cus>=0?'pos':'neg'}">${val?fm(val-cus):'—'}</td></tr>`;}).join('');
+  PER=null;
+  $('prKpis').innerHTML=`<div class="kpi"><small>Produção total</small><b>${fq(+tSc.toFixed(1))} sc</b><small>${fq(+(tSc*0.06).toFixed(1))} t</small></div>
+   <div class="kpi"><small>Produtividade média</small><b>${tA?fq(+(tSc/tA).toFixed(1)):'—'} sc/ha</b><small>${fq(tA)} ha colhidos</small></div>
+   <div class="kpi"><small>Custo por saca</small><b class="neg">${tSc?fm(tCus/tSc):'—'}</b></div>
+   <div class="kpi"><small>Valor estimado</small><b class="pos">${tVal?fm(tVal):'—'}</b>${tVal?`<small>resultado ${fm(tVal-tCus)}</small>`:''}</div>`;
+  $('prTab').innerHTML=lin?'<tr><th>Talhão</th><th class="n">Produção</th><th class="n">Produtividade</th><th class="n">Custo/saca</th><th class="n">Valor est.</th><th class="n">Resultado est.</th></tr>'+lin:'<tr><td class="muted">Nenhuma produção lançada'+(cult?' para '+esc(cult):'')+'.</td></tr>';
+  const l=(S.Pr||[]).filter(p=>!cult||p.cult===cult).sort((a,b)=>b.data.localeCompare(a.data)||(b.criadoEm||0)-(a.criadoEm||0));
+  $('prLista').innerHTML=l.length?'<tr><th>Data</th><th>Talhão</th><th class="n">Quantidade</th><th class="n">Valor est.</th><th></th></tr>'+l.map(p=>`<tr><td>${fd(p.data)}</td>
+    <td>${esc(talNome(p.tal)||p.talNome)}<br><span class="muted">${esc(p.cult||'')}${p.umi?' · '+fq(p.umi)+'% umid.':''}${p.obs?' · '+esc(p.obs):''}${p.mov?' · 📦 no estoque':''}</span></td>
+    <td class="n">${fq(p.qtd)} ${p.un==='sc'?'sc':esc(p.un)}${p.un!=='sc'?`<br><span class="muted">${fq(+scDe(p).toFixed(1))} sc</span>`:''}</td><td class="n">${p.preco?fm(scDe(p)*p.preco):''}</td>
+    <td class="n"><button class="btn sm sec" onclick="excluirProducao('${p.id}')">🗑</button></td></tr>`).join(''):'<tr><td class="muted">—</td></tr>';}
+
+// --- talhões
+function salvarTal(){const nome=$('tNome').value.trim();if(!nome){toast('Informe o nome do talhão');return;}
+  const id=$('tId').value;if(!id&&Object.values(S.T).some(t=>t.nome.toLowerCase()===nome.toLowerCase())){toast('Já existe um talhão com esse nome');return;}
+  const b=db.batch();b.set(id?col('talhoes').doc(id):col('talhoes').doc(),{nome,area:num($('tArea').value),cult:$('tCult').value.trim()},{merge:true});
+  gravar(b,id?'Talhão atualizado':'Talhão cadastrado');limparTal();}
+function editarTal(id){const t=S.T[id];$('tId').value=id;$('tNome').value=t.nome;$('tArea').value=t.area||'';$('tCult').value=t.cult||'';
+  $('tTitulo').textContent='Editar talhão';$('tCancel').classList.remove('hide');$('tNome').scrollIntoView({block:'center'});}
+function limparTal(){['tId','tNome','tArea','tCult'].forEach(i=>$(i).value='');$('tTitulo').textContent='Cadastrar talhão';$('tCancel').classList.add('hide');}
+function excluirTal(id){if(!confirm(`Excluir o talhão "${S.T[id].nome}"? Os lançamentos dele continuam, mas ficam sem talhão.`))return;
+  const b=db.batch();b.delete(col('talhoes').doc(id));if(talAberto===id)talAberto='';gravar(b,'Talhão excluído');}
+function verTal(id){talAberto=talAberto===id?'':id;renderTal();if(talAberto)$('talDet').scrollIntoView({behavior:'smooth'});}
+let PER=null; // período alternativo (aba Produção)
+function noPeriodo(d){const de=PER?PER[0]:$('tDe').value,ate=PER?PER[1]:$('tAte').value;return(!de||d>=de)&&(!ate||d<=ate);}
+function lancTal(id){ // insumos (baixas) + financeiro do talhão
+  const ins=S.M.filter(m=>m.tipo==='B'&&m.tal===id&&noPeriodo(m.data)).map(m=>{const p=S.C[m.pid]||{nome:'?'};
+    return{data:m.data,desc:`${p.nome} (${fq(m.qtd)} ${p.un||''})`+(m.nomeQuem?' · '+m.nomeQuem:''),cat:p.cat||'Insumos',tipo:'D',val:K.cm[m.id]||0,ins:true};});
+  const fin=S.F.filter(f=>f.tal===id&&!f.rateio&&noPeriodo(f.data)).map(f=>({...f,ins:false}));
+  const tA=Object.values(S.T).reduce((s,t)=>s+(t.area||0),0),a=(S.T[id]&&S.T[id].area)||0;
+  const rat=tA&&a?S.F.filter(f=>f.rateio&&noPeriodo(f.data)).map(f=>({...f,desc:f.desc+' (rateio '+Math.round(a/tA*100)+'%)',val:f.val*a/tA,ins:false,rat:true})):[];
+  return ins.concat(fin,rat);}
+function resumo(l){const r=l.filter(f=>f.tipo==='R').reduce((s,f)=>s+f.val,0),d=l.filter(f=>f.tipo==='D').reduce((s,f)=>s+f.val,0);return{r,d,res:r-d};}
+function renderTal(){
+  const tals=talhoesOrdenados();
+  if(!tals.length){$('talCards').innerHTML='<div class="card muted">Nenhum talhão cadastrado. Cadastre no formulário mais abaixo.</div>';$('talDet').classList.add('hide');return;}
+  let tA=0,tD=0,tR=0;
+  const linhas=tals.map(t=>{const s=resumo(lancTal(t.id));tA+=t.area||0;tD+=s.d;tR+=s.r;
+    return `<tr style="cursor:pointer${talAberto===t.id?';background:#eef5ea':''}" onclick="verTal('${t.id}')">
+    <td><b>${esc(t.nome)}</b><br><span class="muted">${t.area?fq(t.area)+' ha':''}${t.cult?' · '+esc(t.cult):''}</span></td>
+    <td class="n neg">${fm(s.d)}${t.area?`<br><span class="muted">${fm(s.d/t.area)}/ha</span>`:''}</td>
+    <td class="n">${(()=>{const sc=prodTal(t.id).filter(p=>noPeriodo(p.data)).reduce((a,p)=>a+scDe(p),0);return sc?`${fq(+sc.toFixed(1))} sc`+(t.area?`<br><span class="muted">${fq(+(sc/t.area).toFixed(1))} sc/ha</span>`:''):'—';})()}</td>
+    <td class="n pos">${s.r?fm(s.r):'—'}</td>
+    <td class="n ${s.res>=0?'pos':'neg'}">${fm(s.res)}${t.area?`<br><span class="muted">${fm(s.res/t.area)}/ha</span>`:''}</td>
+    <td class="n" onclick="event.stopPropagation()"><button class="btn sm sec" onclick="editarTal('${t.id}')">✎</button> <button class="btn sm sec" onclick="excluirTal('${t.id}')">🗑</button></td></tr>`;}).join('');
+  $('talCards').innerHTML=`<div class="card"><h2>Custo e resultado por talhão</h2><p class="muted" style="margin-top:-4px">Toque num talhão para ver o detalhe. Produtos aplicados entram pelo custo médio de compra.</p>
+  <div class="scroll"><table><tr><th>Talhão</th><th class="n">Custos</th><th class="n">Produção</th><th class="n">Receitas</th><th class="n">Resultado</th><th></th></tr>${linhas}
+  <tr><td><b>Total</b><br><span class="muted">${fq(tA)} ha</span></td><td class="n neg"><b>${fm(tD)}</b>${tA?`<br><span class="muted">${fm(tD/tA)}/ha</span>`:''}</td>
+  <td></td><td class="n pos"><b>${fm(tR)}</b></td><td class="n ${tR-tD>=0?'pos':'neg'}"><b>${fm(tR-tD)}</b></td><td></td></tr></table></div></div>`;
+  const t=S.T[talAberto];if(!t){$('talDet').classList.add('hide');return;}
+  $('talDet').classList.remove('hide');
+  const l=lancTal(t.id).sort((a,b)=>b.data.localeCompare(a.data)||(b.criadoEm||0)-(a.criadoEm||0)),s=resumo(l);
+  $('talDetT').textContent='🌱 '+t.nome+(t.cult?' – '+t.cult:'');
+  $('talDetK').innerHTML=`<div class="kpi"><small>Área</small><b>${t.area?fq(t.area)+' ha':'—'}</b></div>
+  <div class="kpi"><small>Custos</small><b class="neg">${fm(s.d)}</b>${t.area?`<small>${fm(s.d/t.area)}/ha</small>`:''}</div>
+  <div class="kpi"><small>Receitas</small><b class="pos">${fm(s.r)}</b></div>
+  <div class="kpi"><small>Resultado</small><b class="${s.res>=0?'pos':'neg'}">${fm(s.res)}</b>${t.area?`<small>${fm(s.res/t.area)}/ha</small>`:''}</div>`+
+  (()=>{const L=prodTal(t.id).filter(p=>noPeriodo(p.data));if(!L.length)return '';const sc=L.reduce((a,p)=>a+scDe(p),0);
+    return `<div class="kpi"><small>🌾 Produção</small><b>${fq(+sc.toFixed(1))} sc</b>${t.area?`<small>${fq(+(sc/t.area).toFixed(1))} sc/ha</small>`:''}</div>
+    <div class="kpi"><small>Custo por saca</small><b class="neg">${fm(s.d/sc)}</b></div>`;})();
+  const c={};l.filter(f=>f.tipo==='D').forEach(f=>{c[f.cat||'Geral']=(c[f.cat||'Geral']||0)+f.val;});
+  const ks=Object.keys(c).sort((a,b)=>c[b]-c[a]);
+  $('talDetC').innerHTML=ks.length?'<tr><th>Categoria</th><th class="n">Custo</th>'+(t.area?'<th class="n">R$/ha</th>':'')+'<th class="n">%</th></tr>'+ks.map(k=>`<tr><td>${esc(k)}</td><td class="n">${fm(c[k])}</td>${t.area?`<td class="n">${fm(c[k]/t.area)}</td>`:''}<td class="n">${s.d?Math.round(c[k]/s.d*100):0}%</td></tr>`).join(''):'<tr><td class="muted">Sem custos no período.</td></tr>';
+  $('talDetL').innerHTML=l.length?'<tr><th>Data</th><th>Descrição</th><th class="n">Valor</th></tr>'+l.map(f=>`<tr><td>${fd(f.data)}</td><td>${esc(f.desc)}<br><span class="muted">${f.ins?'🧪 aplicado do estoque · ':''}${f.rat?'↔ ':''}${esc(f.cat)}</span></td><td class="n ${f.tipo==='R'?'pos':'neg'}">${f.tipo==='R'?'+':'−'} ${fm(f.val)}</td></tr>`).join(''):'<tr><td class="muted">Nenhum lançamento no período.</td></tr>';}
+
+// --- histórico
+function renderHis(){
+  const pid=$('hProd').value,t=$('hTipo').value,q=$('hQuem').value;
+  const l=S.M.filter(m=>(!pid||m.pid===pid)&&(!t||m.tipo===t)&&(!q||m.quem===q)).sort((a,b)=>b.data.localeCompare(a.data)||(b.criadoEm||0)-(a.criadoEm||0)).slice(0,300);
+  $('tHis').innerHTML=l.length?'<tr><th>Data</th><th>Produto</th><th class="n">Qtd</th><th class="n">Valor</th><th></th></tr>'+l.map(m=>{const p=S.C[m.pid]||{nome:'(produto excluído)'};
+    const v=m.tipo==='E'?(S.P[m.id]?m.qtd*S.P[m.id].val:0):(K.cm[m.id]||0);
+    return `<tr><td>${fd(m.data)}</td><td>${esc(p.nome)} <span class="tag ${m.tipo==='E'?'e':'b'}">${m.tipo==='E'?'Entrada':'Baixa'}</span>
+    <br><span class="muted">${m.tal?'🌱 '+esc(talNome(m.tal))+' · ':''}${esc(m.nomeQuem||'')}${m.origem==='tratorista'||m.origem==='piloto'?' 🚜':''}${m.origem==='piloto'?' (piloto)':''}${m.nomeAprov?' · liberado por '+esc(m.nomeAprov):''}${m.obs?' · '+esc(m.obs):''}</span></td>
+    <td class="n">${m.tipo==='E'?'+':'−'}${fq(m.qtd)} ${esc(p.un||'')}</td><td class="n">${v?fm(v):''}</td>
+    <td class="n"><button class="btn sm sec" onclick="excluirMov('${m.id}')">🗑</button></td></tr>`}).join(''):'<tr><td class="muted">Nenhuma movimentação.</td></tr>';}
+
+// --- usuários
+async function criarUsuario(){
+  const nome=$('uNome').value.trim(),u=$('uUser').value.trim().toLowerCase(),p=$('uPass').value,papel=$('uPapel').value;
+  if(!nome||!u||p.length<6){toast('Preencha nome, usuário e senha (mín. 6)');return;}
+  if(!navigator.onLine){toast('Precisa de internet para criar usuário');return;}
+  $('uBtn').disabled=true;
+  try{
+    const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(FIREBASE_CONFIG,'sec');
+    if(!licOk()){toast('🔒 Licença vencida: não dá para criar usuário.');$('uBtn').disabled=false;return;}
+    const cr=await sec.auth().createUserWithEmailAndPassword(emailDe(u,FID),p);await sec.auth().signOut();
+    const b=db.batch(),dados={nome,papel,login:slug(u),criadoEm:Date.now()};
+    b.set(raiz('membros').doc(cr.user.uid),{...dados,fid:FID});b.set(col('usuarios').doc(cr.user.uid),dados);await b.commit();
+    toast(`Usuário criado: ${slug(u)} · fazenda ${FID}`);['uNome','uUser','uPass'].forEach(i=>$(i).value='');
+  }catch(e){toast(e.code==='auth/email-already-in-use'?'Esse usuário já existe, use outro nome':('Erro: '+(e.message||e.code)));}
+  $('uBtn').disabled=false;}
+function removerUsu(id){if(!confirm(`Remover o acesso de ${S.U[id].nome}? Ele não consegue mais entrar.`))return;const b=db.batch();b.delete(col('usuarios').doc(id));b.delete(raiz('membros').doc(id));gravar(b,'Acesso removido');}
+function renderUsu(){$('uCod').textContent=FID||'';
+  const l=Object.values(S.U).sort((a,b)=>ord(a.papel,b.papel)||ord(a.nome,b.nome));
+  const nm={patrao:'Patrão',tratorista:'Tratorista',estoque:'Tablet do estoque'};
+  $('tUsu').innerHTML='<tr><th>Nome</th><th>Usuário</th><th>Tipo</th><th></th></tr>'+l.map(x=>`<tr><td>${esc(x.nome)}</td><td>${esc(x.login||'')}</td><td>${nm[x.papel]||x.papel}</td>
+    <td class="n">${x.id===S.uid?'<span class="muted">você</span>':`<button class="btn sm sec" onclick="removerUsu('${x.id}')">Remover</button>`}</td></tr>`).join('');}
+
+// --- backup
+function baixar(nome,conteudo,tipoMime){const b=new Blob([conteudo],{type:tipoMime});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+function exportar(){baixar(`backup-fazenda-${hoje()}.json`,JSON.stringify({versao:2,catalogo:S.C,talhoes:S.T,movimentos:S.M,precos:S.P,financeiro:S.F,producao:S.Pr||[],ordens:S.Ord||[],pedidos:S.Pd||[]},null,1),'application/json');toast('Backup gerado');}
+function importar(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=async()=>{try{const d=JSON.parse(r.result);if(!d.prod||!d.mov)throw 0;
+    if(!confirm(`Enviar para a nuvem: ${d.prod.length} produtos, ${(d.tal||[]).length} talhões, ${d.mov.length} movimentações e os lançamentos financeiros?`))return;
+    const ops=[];
+    d.prod.forEach(p=>ops.push(['catalogo',p.id,{nome:p.nome,un:p.un||'',cat:p.cat||'',min:p.min||0}]));
+    (d.tal||[]).forEach(t=>ops.push(['talhoes',t.id,{nome:t.nome,area:t.area||0,cult:t.cult||''}]));
+    d.mov.forEach((m,i)=>{ops.push(['movimentos',m.id,{pid:m.pid,tipo:m.tipo,qtd:m.qtd,data:m.data,tal:m.tal||'',obs:m.obs||'',quem:S.uid,nomeQuem:S.nome+' (importado)',origem:'importado',criadoEm:i}]);
+      if(m.val>0)ops.push(['precos',m.id,{val:m.val}]);});
+    (d.fin||[]).filter(x=>!x.aloc).forEach(x=>ops.push(['financeiro',x.id,{tipo:x.tipo,desc:x.desc,val:x.val,cat:x.cat||'Geral',data:x.data,tal:x.tal||'',mid:x.mid||'',criadoEm:Date.now()}]));
+    for(let i=0;i<ops.length;i+=400){const b=db.batch();ops.slice(i,i+400).forEach(([c,id,v])=>b.set(col(c).doc(id),v));gravar(b);}
+    toast('Importado: '+ops.length+' registros');}catch(e){toast('Arquivo inválido');}ev.target.value='';};
+  r.readAsText(f);}
+function csv(q){const c=v=>'"'+String(v??'').replace(/"/g,'""')+'"',n=v=>String(v).replace('.',',');let rows;
+  if(q==='est')rows=[['Produto','Categoria','Unidade','Saldo','Mínimo','Custo médio','Valor em estoque']].concat(catalogoOrdenado().map(p=>{const s=saldo(p.id),a=K.avg[p.id]||0;return[p.nome,p.cat,p.un,n(s),n(p.min||0),n(a.toFixed(2)),n((s>0?s*a:0).toFixed(2))]}));
+  if(q==='mov')rows=[['Data','Tipo','Produto','Quantidade','Unidade','Valor','Talhão','Quem','Obs']].concat(S.M.map(m=>{const p=S.C[m.pid]||{};const v=m.tipo==='E'?(S.P[m.id]?m.qtd*S.P[m.id].val:0):(K.cm[m.id]||0);return[fd(m.data),m.tipo==='E'?'Entrada':'Baixa',p.nome,n(m.qtd),p.un,n(v.toFixed(2)),talNome(m.tal),m.nomeQuem,m.obs]}));
+  if(q==='fin')rows=[['Data','Tipo','Descrição','Categoria','Talhão','Máquina','Funcionário','Litros','Fornecedor','Valor']].concat(S.F.map(f=>[fd(f.data),f.tipo==='R'?'Receita':'Despesa',f.desc,f.cat,f.rateio?'Rateado':talNome(f.tal),f.maquina,f.func,f.litros?n(f.litros):'',f.fornecedor,n(f.tipo==='R'?f.val:-f.val)]));
+  if(q==='tal')rows=[['Talhão','Data','Descrição','Categoria','Tipo','Valor']].concat(talhoesOrdenados().flatMap(t=>lancTal(t.id).map(f=>[t.nome,fd(f.data),f.desc,f.cat,f.tipo==='R'?'Receita':'Custo',n((f.tipo==='R'?f.val:-f.val).toFixed(2))])));
+  if(q==='pro')rows=[['Data','Talhão','Área (ha)','Cultura/safra','Quantidade','Unidade','Sacas','sc/ha','Umidade %','Preço R$/sc','Valor','Obs']].concat((S.Pr||[]).map(p=>{const t=S.T[p.tal]||{};const sc=scDe(p);return[fd(p.data),talNome(p.tal)||p.talNome,n(t.area||''),p.cult,n(p.qtd),p.un,n(sc.toFixed(2)),t.area?n((sc/t.area).toFixed(2)):'',p.umi?n(p.umi):'',p.preco?n(p.preco):'',p.preco?n((sc*p.preco).toFixed(2)):'',p.obs]}));
+  baixar(`${q}-${hoje()}.csv`,'﻿'+rows.map(r=>r.map(c).join(';')).join('\r\n'),'text/csv');}
+
+// app instalável e funcionando sem sinal
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
