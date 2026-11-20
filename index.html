@@ -61,6 +61,7 @@ td.n,th.n{text-align:right;white-space:nowrap}
 .chip.on{background:#2f5d34;color:#fff;border-color:#2f5d34}.st{display:inline-block;padding:3px 9px;border-radius:12px;font-size:12px;font-weight:700}
 .st.a{background:#dcefdc;color:#24632c}.st.w{background:#fff3cd;color:#6b4e00}.st.v{background:#f8d7d3;color:#7a1f15}
 tr.novo td{background:#fff6c9;transition:background 1s}
+.modal{position:fixed;inset:0;background:rgba(10,20,30,.55);z-index:50;overflow:auto;padding:16px}.modalBox{background:#fff;max-width:760px;margin:20px auto;border-radius:12px;padding:16px}
 .ok{color:#24632c}.wait{color:#9a6a00}.bad{color:#b23b2e}
 .ped{border-left:5px solid #d99a1e}.ped h3{margin:0 0 4px;font-size:16px}
 .ped .it{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0ec}
@@ -218,7 +219,8 @@ tr.novo td{background:#fff6c9;transition:background 1s}
 <!-- MOVIMENTAR -->
 <section id="t-mov">
   <div class="card">
-    <h2>Nova movimentação</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">Nova movimentação</h2>
+      <button class="btn iaBtn" style="margin:0;background:#6b3fa0" onclick="abrirLeitorNota()">📷 Ler nota fiscal com IA</button></div>
     <div class="seg">
       <button id="bEnt" class="on ent" onclick="setTipo('E')">⬇ Entrada</button>
       <button id="bBx" class="bx" onclick="setTipo('B')">⬆ Baixa</button>
@@ -299,7 +301,8 @@ tr.novo td{background:#fff6c9;transition:background 1s}
 <!-- DESPESAS ADICIONAIS -->
 <section id="t-des" class="hide">
   <div class="card">
-    <h2>Nova despesa</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">Nova despesa</h2>
+      <button class="btn iaBtn" style="margin:0;background:#6b3fa0" onclick="abrirLeitorNota()">📷 Ler nota fiscal com IA</button></div>
     <div class="seg" id="dSeg">
       <button data-g="insumos" class="on" onclick="setG('insumos')">🧪 Insumos</button>
       <button data-g="pecas" onclick="setG('pecas')">🔧 Peças</button>
@@ -480,6 +483,12 @@ tr.novo td{background:#fff6c9;transition:background 1s}
 </main>
 </section>
 
+<input type="file" id="notaFile" accept="image/*" capture="environment" class="hide" onchange="notaEscolhida(event)">
+<div id="notaModal" class="modal hide"><div class="modalBox">
+  <div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">📷 Nota fiscal</h2><button class="btn sm sec" style="margin:0" onclick="fecharNota()">✕ Fechar</button></div>
+  <div id="notaCorpo"></div>
+</div></div>
+<div id="notaVer" class="modal hide" onclick="this.classList.add('hide')"><div class="modalBox" style="text-align:center"><img id="notaImg" style="max-width:100%;border-radius:8px"><p class="muted">Toque para fechar</p></div></div>
 <div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -519,7 +528,7 @@ const DIA=86400000;
 const diasAte=v=>{const a=new Date(v),b=new Date();a.setHours(0,0,0,0);b.setHours(0,0,0,0);return Math.round((a-b)/DIA);}; // por dia do calendário
 
 // ===== licença =====
-const MODS={estoque:'📦 Estoque',financas:'💰 Finanças',ordens:'📋 Ordens',piloto:'🚜 Piloto'};
+const MODS={estoque:'📦 Estoque',financas:'💰 Finanças',ordens:'📋 Ordens',piloto:'🚜 Piloto',ia:'📷 Leitura de notas (IA)'};
 let LIC=null; // {ativa, validade, mod:{}, nome}
 function licOk(m){return !!(LIC&&LIC.ativa&&(!m||LIC.mod[m]));}
 function lerLic(d){const l=d.licenca||{};return{nome:d.nome||'',validade:l.validade||0,ativa:Date.now()<(l.validade||0),mod:l.modulos||{}};}
@@ -531,6 +540,7 @@ function renderLic(){const e=$('lic');if(!LIC||S.papel==='admin'){e.classList.ad
     :`🔒 Licença vencida em ${dt}. Os dados continuam aqui para consulta, mas não dá para lançar nada. Fale com o fornecedor do sistema para renovar.`;}
 const TAB_MOD={ord:'ordens',ped:'estoque',mov:'estoque',est:'estoque',his:'estoque',fin:'financas',des:'financas',pro:'financas'};
 function aplicaModulos(){
+  document.querySelectorAll('.iaBtn').forEach(b=>b.classList.toggle('hide',!LIC.mod.ia));
   if(S.papel==='patrao'){
     document.querySelectorAll('#nav button').forEach(b=>{const m=TAB_MOD[b.dataset.t];b.classList.toggle('hide',!!m&&!LIC.mod[m]);});
     const on=document.querySelector('#nav button.on');if(on&&on.classList.contains('hide')){const f=document.querySelector('#nav button:not(.hide)');if(f)aba(f.dataset.t);}
@@ -988,7 +998,7 @@ function renderFin(){
   <div class="kpi"><small>Resultado do mês</small><b class="${rec-des>=0?'pos':'neg'}">${fm(rec-des)}</b></div>
   <div class="kpi"><small>Saldo acumulado</small><b class="${geral>=0?'pos':'neg'}">${fm(geral)}</b></div>`;
   $('tFin').innerHTML=l.length?'<tr><th>Data</th><th>Descrição</th><th class="n">Valor</th><th></th></tr>'+l.map(f=>`<tr${Date.now()-(f.criadoEm||0)<8000?' class="novo"':''}><td>${fd(f.data)}</td>
-    <td>${esc(f.desc)}<br><span class="tag ${f.tipo==='R'?'r':'d'}">${f.tipo==='R'?'Receita':'Despesa'}</span> <span class="muted">${esc(f.cat)}${f.tal?' · 🌱 '+esc(talNome(f.tal)):''}${f.rateio?' · ↔ rateado':''}</span></td>
+    <td>${esc(f.desc)}${f.nota?` <a href="#" onclick="verNotaId('${f.nota}');return false" title="Ver foto da nota">📎</a>`:''}<br><span class="tag ${f.tipo==='R'?'r':'d'}">${f.tipo==='R'?'Receita':'Despesa'}</span> <span class="muted">${esc(f.cat)}${f.tal?' · 🌱 '+esc(talNome(f.tal)):''}${f.rateio?' · ↔ rateado':''}</span></td>
     <td class="n ${f.tipo==='R'?'pos':'neg'}">${f.tipo==='R'?'+':'−'} ${fm(f.val)}</td><td class="n"><button class="btn sm sec" onclick="excluirFin('${f.id}')">🗑</button></td></tr>`).join('')
     :'<tr><td class="muted">Nenhum lançamento neste mês.</td></tr>';
   const c={};l.forEach(f=>{const k=f.cat||'Geral';c[k]=c[k]||{r:0,d:0};c[k][f.tipo==='R'?'r':'d']+=f.val;});
@@ -1047,12 +1057,12 @@ function renderDesp(){
   const tot={};Object.keys(GR).forEach(g=>tot[g]=0);l.forEach(f=>tot[grupoDe(f)]+=f.val);
   $('dKpis').innerHTML=Object.keys(GR).map(g=>`<div class="kpi"><small>${GR[g].i} ${GR[g].n}</small><b class="neg">${fm(tot[g])}</b></div>`).join('');
   $('dLista').innerHTML=l.length?'<tr><th>Data</th><th>Despesa</th><th class="n">Valor</th><th></th></tr>'+l.map(f=>`<tr${Date.now()-(f.criadoEm||0)<8000?' class="novo"':''}><td>${fd(f.data)}</td>
-    <td>${GR[grupoDe(f)]?GR[grupoDe(f)].i:''} ${esc(f.desc)}<br><span class="muted">${grupoDe(f)==='insumos'?esc(f.sub||f.cat||'')+' · ':''}${f.mid?'📦 entrou no estoque':f.rateio?'↔ rateado entre os talhões':f.tal?'🌱 '+esc(talNome(f.tal)):'geral'}${f.fornecedor?' · '+esc(f.fornecedor):''}</span></td>
+    <td>${GR[grupoDe(f)]?GR[grupoDe(f)].i:''} ${esc(f.desc)}${f.nota?` <a href="#" onclick="verNotaId('${f.nota}');return false" title="Ver foto da nota">📎</a>`:''}<br><span class="muted">${grupoDe(f)==='insumos'?esc(f.sub||f.cat||'')+' · ':''}${f.mid?'📦 entrou no estoque':f.rateio?'↔ rateado entre os talhões':f.tal?'🌱 '+esc(talNome(f.tal)):'geral'}${f.fornecedor?' · '+esc(f.fornecedor):''}</span></td>
     <td class="n neg">${fm(f.val)}</td><td class="n"><button class="btn sm sec" onclick="excluirFin('${f.id}')">🗑</button></td></tr>`).join(''):'<tr><td class="muted">Nenhuma despesa neste mês.</td></tr>';
   const por=(k,filtro)=>{const o={};l.filter(filtro).forEach(f=>{const x=f[k]||'(sem nome)';o[x]=o[x]||{v:0,l:0};o[x].v+=f.val;o[x].l+=f.litros||0;});return Object.entries(o).sort((a,b)=>b[1].v-a[1].v);};
   const pm=por('maquina',f=>f.grupo==='pecas'||f.grupo==='comb');
   $('dMaqT').innerHTML=pm.length?'<tr><th>Máquina</th><th class="n">Litros</th><th class="n">Total</th></tr>'+pm.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="n">${v.l?fq(v.l)+' L':''}</td><td class="n">${fm(v.v)}</td></tr>`).join(''):'<tr><td class="muted">—</td></tr>';
-  const ins={};l.filter(f=>grupoDe(f)==='insumos').forEach(f=>{const p=f.pid?S.C[f.pid]:null;const k=f.sub||(p&&p.cat)||(f.cat&&f.cat!=='Insumos'&&f.cat!=='Compra de insumos'?f.cat:'Outros insumos');ins[k]=(ins[k]||0)+f.val;});
+  const ins={};l.filter(f=>grupoDe(f)==='insumos').forEach(f=>{if(f.itens&&f.itens.length){f.itens.forEach(x=>{const k=x.sub||'Outros insumos';ins[k]=(ins[k]||0)+x.val;});return;}const p=f.pid?S.C[f.pid]:null;const k=f.sub||(p&&p.cat)||(f.cat&&f.cat!=='Insumos'&&f.cat!=='Compra de insumos'?f.cat:'Outros insumos');ins[k]=(ins[k]||0)+f.val;});
   const ik=Object.keys(ins).sort((a,b)=>ins[b]-ins[a]),it=ik.reduce((s,k)=>s+ins[k],0);
   $('dInsT').innerHTML=ik.length?'<tr><th>Tipo</th><th class="n">Total</th><th class="n">%</th></tr>'+ik.map(k=>`<tr><td>${esc(k)}</td><td class="n">${fm(ins[k])}</td><td class="n">${Math.round(ins[k]/it*100)}%</td></tr>`).join(''):'<tr><td class="muted">—</td></tr>';
   const pf=por('func',f=>f.grupo==='func');
@@ -1212,6 +1222,125 @@ function csv(q){const c=v=>'"'+String(v??'').replace(/"/g,'""')+'"',n=v=>String(
   if(q==='tal')rows=[['Talhão','Data','Descrição','Categoria','Tipo','Valor']].concat(talhoesOrdenados().flatMap(t=>lancTal(t.id).map(f=>[t.nome,fd(f.data),f.desc,f.cat,f.tipo==='R'?'Receita':'Custo',n((f.tipo==='R'?f.val:-f.val).toFixed(2))])));
   if(q==='pro')rows=[['Data','Talhão','Área (ha)','Cultura/safra','Quantidade','Unidade','Sacas','sc/ha','Umidade %','Preço R$/sc','Valor','Obs']].concat((S.Pr||[]).map(p=>{const t=S.T[p.tal]||{};const sc=scDe(p);return[fd(p.data),talNome(p.tal)||p.talNome,n(t.area||''),p.cult,n(p.qtd),p.un,n(sc.toFixed(2)),t.area?n((sc/t.area).toFixed(2)):'',p.umi?n(p.umi):'',p.preco?n(p.preco):'',p.preco?n((sc*p.preco).toFixed(2)):'',p.obs]}));
   baixar(`${q}-${hoje()}.csv`,'﻿'+rows.map(r=>r.map(c).join(';')).join('\r\n'),'text/csv');}
+
+// =====================================================================
+//  LEITURA DE NOTA FISCAL COM IA (Gemini via Firebase AI Logic) – fazenda
+// =====================================================================
+const IA_VERSAO_SDK='12.5.0';
+let IA_MODEL=null,NOTA=null;
+function abrirLeitorNota(){if(!LIC||!LIC.mod.ia){toast('O módulo de leitura de notas não está liberado. Fale com o fornecedor do sistema.');return;}$('notaFile').value='';$('notaFile').click();}
+function fecharNota(){$('notaModal').classList.add('hide');NOTA=null;}
+function lerArquivo(f){return new Promise((ok,er)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=er;r.readAsDataURL(f);});}
+function reduzir(dataUrl,max,q){return new Promise(ok=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');
+  c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',q));};im.onerror=()=>ok(dataUrl);im.src=dataUrl;});}
+async function notaEscolhida(ev){const f=ev.target.files[0];if(!f)return;
+  $('notaModal').classList.remove('hide');$('notaCorpo').innerHTML='<p>⏳ Preparando a foto...</p>';
+  const orig=await lerArquivo(f),grande=await reduzir(orig,1600,0.82),mini=await reduzir(orig,700,0.6);
+  NOTA={img:mini,dados:null};
+  $('notaCorpo').innerHTML=`<div style="display:flex;gap:12px;align-items:center"><img src="${mini}" style="width:90px;border-radius:6px"><div><b>🤖 Lendo a nota com IA...</b><br><span class="muted">Leva alguns segundos.</span></div></div>`;
+  if(navigator.onLine===false&&!window.IA_FAKE){$('notaCorpo').innerHTML='<p class="neg">📡 Sem internet. A leitura com IA precisa de sinal. Tente de novo quando conectar, ou lance à mão.</p>';return;}
+  try{NOTA.dados=await chamarIA(grande.split(',')[1]);telaConferencia();}
+  catch(e){console.error(e);$('notaCorpo').innerHTML=`<p class="neg">Não consegui ler a nota: ${esc(msgErroIA(e))}</p><p class="muted">Tente outra foto: nota inteira, reta, com boa luz e sem reflexo. Ou lance à mão.</p>`;}}
+function msgErroIA(e){const m=String(e&&e.message||e);if(/429|quota|RESOURCE_EXHAUSTED/i.test(m))return 'limite do plano gratuito da IA atingido por agora. Espere um pouco e tente de novo.';
+  if(/API.?key|permission|403|not enabled|SERVICE_DISABLED/i.test(m))return 'a IA não está ativada no Firebase (AI Logic > Gemini Developer API).';if(/JSON|Unexpected token/i.test(m))return 'a resposta veio incompleta.';return m.slice(0,160);}
+function promptNota(){const cad=catalogoOrdenado().map(p=>`${p.nome} (${p.un||'un'})`).join('; ')||'nenhum';
+  return `Você lê notas fiscais e cupons brasileiros (NF-e, NFC-e, DANFE, nota de balcão) de uma fazenda.
+Extraia os dados da imagem e responda SOMENTE com JSON válido, sem texto extra, neste formato:
+{"fornecedor":"","cnpj":"","numero":"","data":"AAAA-MM-DD","total":0,"frete":0,"desconto":0,"forma_pagamento":"","categoria":"insumos|pecas|comb|func|outros",
+"itens":[{"descricao":"texto como está na nota","nome_simples":"nome limpo e curto","quantidade":0,"valor_total":0,"tipo":"insumo|peca|outro","embalagem_qtd":0,"embalagem_unidade":"L|kg|sc|t|un","categoria_item":"","item_cadastrado":""}]}
+Regras:
+- Valores numéricos com ponto decimal, sem "R$". "total" é o valor total da nota.
+- tipo "insumo" = sementes, adubos, fertilizantes, calcário, defensivos (herbicida, fungicida, inseticida), adjuvantes, grãos; "peca" = peças e manutenção de máquinas; "outro" = o resto (comida, diesel, serviço).
+- embalagem_qtd/embalagem_unidade = conteúdo de UMA embalagem quando estiver escrito (ex.: "BD 20L" = 20 e "L"; "FR 5L" = 5 e "L"; "SC 50KG" = 50 e "kg"; "BIG BAG 1000KG" = 1000 e "kg"). Se a nota já estiver em kg, L ou t, use 0 e a unidade da nota.
+- categoria_item: ex. Herbicida, Fungicida, Inseticida, Adjuvante, Adubo, Semente, Calcário, Peça.
+- item_cadastrado: se o item for o mesmo produto de um destes já cadastrados no estoque, escreva o nome EXATO dele; senão deixe "". Cadastrados: ${cad}.
+- Se não conseguir ler um campo, deixe vazio ou 0. Não invente.`;}
+async function iaModelo(nome){const [{initializeApp,getApps},{getAI,getGenerativeModel,GoogleAIBackend}]=await Promise.all([
+    import(`https://www.gstatic.com/firebasejs/${IA_VERSAO_SDK}/firebase-app.js`),import(`https://www.gstatic.com/firebasejs/${IA_VERSAO_SDK}/firebase-ai.js`)]);
+  const app=getApps().find(a=>a.name==='ia')||initializeApp(FIREBASE_CONFIG,'ia');
+  return getGenerativeModel(getAI(app,{backend:new GoogleAIBackend()}),{model:nome,generationConfig:{responseMimeType:'application/json',temperature:0.1}});}
+async function chamarIA(b64){
+  if(window.IA_FAKE)return window.IA_FAKE();
+  const modelos=(typeof GEMINI_MODELOS!=='undefined'&&GEMINI_MODELOS.length)?GEMINI_MODELOS:['gemini-2.5-flash-lite','gemini-2.5-flash'];let ult;
+  for(const nome of (IA_MODEL?[IA_MODEL]:modelos)){
+    try{const m=await iaModelo(nome);const r=await m.generateContent([promptNota(),{inlineData:{data:b64,mimeType:'image/jpeg'}}]);
+      const t=r.response.text().trim().replace(/^```(json)?/i,'').replace(/```$/,'').trim();const j=JSON.parse(t);IA_MODEL=nome;return j;}
+    catch(e){ult=e;if(!/404|not found|not supported|is not available|unknown model/i.test(String(e&&e.message)))throw e;}}
+  throw ult;}
+const nrmTxt=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function acharItem(it){const alvo=nrmTxt(it.item_cadastrado||'');let p=alvo&&catalogoOrdenado().find(x=>nrmTxt(x.nome)===alvo);if(p)return p.id;
+  const n=' '+nrmTxt(it.nome_simples||it.descricao)+' ';
+  p=catalogoOrdenado().find(x=>{const w=nrmTxt(x.nome).split(' ').find(t=>t.length>=4);return w&&n.includes(' '+w+' ');});return p?p.id:'';}
+const UNS=['kg','L','sc','t','un','g','mL'];
+function telaConferencia(){const d=NOTA.dados||{};
+  NOTA.itens=(d.itens||[]).map(it=>{const pid=acharItem(it),tipo=it.tipo==='peca'?'peca':it.tipo==='outro'?'outro':'insumo';
+    return{desc:it.descricao||it.nome_simples||'',nome:it.nome_simples||it.descricao||'',qtd:num(it.quantidade)||1,val:num(it.valor_total),tipo,emb:num(it.embalagem_qtd),
+      embUn:pid&&S.C[pid].un?S.C[pid].un:(it.embalagem_unidade||'un'),cat:it.categoria_item||'',acao:!LIC.mod.estoque?'nao':pid?'cat:'+pid:(tipo==='insumo'?'novo':'nao')};});
+  const its=NOTA.itens,cat=GR[d.categoria]?d.categoria:(its.some(i=>i.tipo==='insumo')?'insumos':its.some(i=>i.tipo==='peca')?'pecas':'outros');
+  $('notaCorpo').innerHTML=`<div style="display:flex;gap:12px;align-items:flex-start;margin:10px 0"><img src="${NOTA.img}" style="width:110px;border-radius:6px;cursor:zoom-in" onclick="verNota('${NOTA.img}')">
+    <div class="muted" style="font-size:13px">🤖 Lido pela IA. <b>Confira tudo antes de salvar</b>, principalmente valores e as quantidades convertidas.</div></div>
+   <div class="row"><div style="flex:2"><label>Fornecedor</label><input id="nFor" value="${esc(d.fornecedor||'')}"></div><div><label>CNPJ</label><input id="nCnpj" value="${esc(d.cnpj||'')}"></div><div><label>Nº da nota</label><input id="nNum" value="${esc(d.numero||'')}"></div></div>
+   <div class="row"><div><label>Data</label><input id="nData" type="date" value="${/^\d{4}-\d{2}-\d{2}$/.test(d.data||'')?d.data:hoje()}"></div>
+     <div><label>Total da nota (R$)</label><input id="nTot" type="number" step="any" value="${num(d.total)||''}" oninput="notaCalc()"></div>
+     <div><label>Frete (R$)</label><input id="nFrete" type="number" step="any" value="${num(d.frete)||''}" oninput="notaCalc()"></div>
+     <div><label>Desconto (R$)</label><input id="nDesc" type="number" step="any" value="${num(d.desconto)||''}" oninput="notaCalc()"></div></div>
+   <div class="row"><div><label>Tipo de despesa</label><select id="nCat">${Object.entries(GR).map(([k,g])=>`<option value="${k}"${k===cat?' selected':''}>${g.i} ${g.n}</option>`).join('')}</select></div>
+     <div id="nOndeBox"><label>Lançar em (o que não vai para o estoque)</label><select id="nOnde"><option value="">Geral da fazenda</option><option value="rateio">↔ Ratear entre os talhões pela área</option>${talhoesOrdenados().map(t=>`<option value="${t.id}">Só no ${esc(t.nome)}</option>`).join('')}</select></div></div>
+   <h2 style="margin:14px 0 4px;font-size:16px">Itens da nota</h2><div id="nItens"></div>
+   <div id="nRes" style="margin-top:8px"></div>
+   <button class="btn big" id="nSalvar" onclick="salvarNota()">✔ Salvar</button>`;
+  notaItens();}
+function notaItens(){const opC=catalogoOrdenado().map(p=>`<option value="cat:${p.id}">${esc(p.nome)} (${esc(p.un||'un')})</option>`).join('');
+  $('nItens').innerHTML=NOTA.itens.map((it,k)=>`<div class="nIt" data-k="${k}" style="border:1px solid #dde3ea;border-radius:8px;padding:8px 10px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;gap:8px"><b style="font-size:14px">${esc(it.desc)}</b><span>${fm(it.val)}</span></div>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:2"><label>O que fazer</label><select class="ia" onchange="notaLer();notaItens()">
+        ${LIC.mod.estoque?`<optgroup label="Dar entrada no estoque como">${opC}</optgroup><option value="novo">➕ Cadastrar produto novo no estoque</option>`:''}<option value="nao">Só despesa (não vai para o estoque)</option></select></div>
+      <div><label>Qtd na nota</label><input class="iq" type="number" step="any" value="${it.qtd}" oninput="notaLer();notaCalc()"></div>
+      <div><label>Valor do item (R$)</label><input class="iv" type="number" step="any" value="${it.val}" oninput="notaLer();notaCalc()"></div></div>
+    ${it.acao==='nao'?'':`<div class="row" style="align-items:flex-end">
+      ${it.acao==='novo'?`<div style="flex:2"><label>Nome do produto novo</label><input class="inm" value="${esc(it.nome)}" oninput="notaLer()"></div>
+        <div><label>Categoria</label><input class="ict" value="${esc(it.cat)}" list="cats" oninput="notaLer()"></div>`:''}
+      <div><label>Cada embalagem tem</label><input class="ie" type="number" step="any" value="${it.emb||''}" placeholder="1" oninput="notaLer();notaCalc()"></div>
+      <div><label>Unidade</label><select class="ieu" onchange="notaLer();notaCalc()">${UNS.map(u=>`<option${(it.acao.startsWith('cat:')?((S.C[it.acao.slice(4)]||{}).un||it.embUn):it.embUn)===u?' selected':''}>${u}</option>`).join('')}</select></div>
+    </div><div class="muted ic" style="font-size:13px;margin-top:4px"></div>`}</div>`).join('');
+  document.querySelectorAll('#nItens .nIt').forEach(el=>{el.querySelector('.ia').value=NOTA.itens[+el.dataset.k].acao;});notaCalc();}
+function notaLer(){document.querySelectorAll('#nItens .nIt').forEach(el=>{const it=NOTA.itens[+el.dataset.k],g=c=>el.querySelector(c);
+  it.acao=g('.ia').value;it.qtd=num(g('.iq').value);it.val=num(g('.iv').value);if(g('.ie')){it.emb=num(g('.ie').value);it.embUn=g('.ieu').value;}
+  if(g('.inm')){it.nome=g('.inm').value.trim();it.cat=g('.ict').value.trim();}});}
+function notaCalc(){if(!NOTA||!NOTA.itens)return;notaLer();
+  const its=NOTA.itens,soma=its.reduce((s,i)=>s+i.val,0),frete=num($('nFrete').value),desc=num($('nDesc').value),tot=num($('nTot').value);
+  const extra=frete-desc,base=its.filter(i=>i.acao!=='nao').reduce((s,i)=>s+i.val,0)||1;
+  document.querySelectorAll('#nItens .nIt').forEach(el=>{const it=its[+el.dataset.k],c=el.querySelector('.ic');if(!c)return;
+    const qe=it.qtd*(it.emb||1),vf=it.val+extra*it.val/base;it.qtdEst=+qe.toFixed(3);it.vf=vf;it.preco=qe?vf/qe:0;
+    const p=it.acao.startsWith('cat:')?S.C[it.acao.slice(4)]:null,a=p?K.avg[p.id]:0;
+    c.innerHTML=`📦 Entra no estoque: <b>${fq(it.qtd)}${it.emb&&it.emb!==1?` × ${fq(it.emb)} ${esc(it.embUn)} = ${fq(it.qtdEst)} ${esc(it.embUn)}`:' '+esc(it.embUn)}</b> · <b>${fm(it.preco)}</b> por ${esc(it.embUn)}${extra?` <span class="muted">(com ${extra>0?'frete':'desconto'} rateado)</span>`:''}${a?` · custo médio atual ${fm(a)}`:''}`;});
+  const est=its.filter(i=>i.acao!=='nao'),conf=soma+frete-desc;
+  $('nOndeBox').classList.toggle('hide',est.length===its.length&&its.length>0);
+  $('nRes').innerHTML=`Itens: ${fm(soma)}${frete?` + frete ${fm(frete)}`:''}${desc?` − desconto ${fm(desc)}`:''} = <b>${fm(conf)}</b>`+
+    (tot&&Math.abs(conf-tot)>0.05?` <span class="neg">⚠ diferente do total da nota (${fm(tot)}). Confira os valores (impostos fora dos itens?).</span>`:tot?' <span class="pos">✔ bate com o total</span>':'')+
+    `<br>Despesa no financeiro: <b>${fm(tot||conf)}</b> · ${est.length} item(ns) para o estoque${its.length-est.length?` · ${its.length-est.length} só como despesa`:''}`;}
+function salvarNota(){notaCalc();const its=NOTA.itens,tot=num($('nTot').value)||its.reduce((s,i)=>s+i.val,0)+num($('nFrete').value)-num($('nDesc').value);
+  if(tot<=0){toast('Informe o total da nota');return;}
+  for(const it of its){if(it.acao==='novo'&&!it.nome){toast('Dê um nome para o produto novo');return;}if(it.acao!=='nao'&&!(it.qtdEst>0)){toast('Quantidade inválida em: '+it.desc);return;}}
+  const b=db.batch(),agora=Date.now(),data=$('nData').value||hoje(),forn=$('nFor').value.trim(),nf=$('nNum').value.trim(),notaRef=col('notas').doc(),grupo=$('nCat').value;
+  const detalhe=[];let nEst=0;
+  its.forEach(it=>{let pid='',sub=it.cat||'';
+    if(it.acao!=='nao'){
+      if(it.acao==='novo'){const ex=Object.values(S.C).find(p=>p.nome.toLowerCase()===it.nome.toLowerCase());
+        if(ex)pid=ex.id;else{const r=col('catalogo').doc();pid=r.id;b.set(r,{nome:it.nome,un:it.embUn,cat:it.cat,min:0});S.C[pid]={id:pid,nome:it.nome,un:it.embUn,cat:it.cat};}}
+      else pid=it.acao.slice(4);
+      sub=(S.C[pid]&&S.C[pid].cat)||it.cat||'';
+      const mr=col('movimentos').doc();b.set(mr,{pid,tipo:'E',qtd:it.qtdEst,data,tal:'',obs:'Nota'+(nf?' '+nf:'')+(forn?' · '+forn:''),quem:S.uid,nomeQuem:S.nome,origem:'patrao',nota:notaRef.id,criadoEm:agora});
+      if(it.preco>0)b.set(col('precos').doc(mr.id),{val:+it.preco.toFixed(4)});nEst++;}
+    detalhe.push({desc:it.desc,pid,sub:sub||(it.tipo==='insumo'?'Outros insumos':it.tipo==='peca'?'Peças':'Outros'),val:+(it.vf||it.val).toFixed(2),estoque:it.acao!=='nao'});});
+  const onde=$('nOndeBox').classList.contains('hide')?'':$('nOnde').value;
+  b.set(col('financeiro').doc(),{tipo:'D',grupo,cat:GR[grupo].n,desc:`Compra${forn?' · '+forn:''}${nf?' · NF '+nf:''}`,val:+tot.toFixed(2),data,fornecedor:forn,
+    tal:onde&&onde!=='rateio'?onde:'',rateio:onde==='rateio',itens:detalhe,nota:notaRef.id,criadoEm:agora});
+  b.set(notaRef,{img:NOTA.img,fornecedor:forn,cnpj:$('nCnpj').value.trim(),numero:nf,data,total:+tot.toFixed(2),itens:detalhe,modelo:IA_MODEL||'',criadoEm:agora});
+  gravar(b,`📷 Nota salva: despesa ${fm(tot)}${nEst?` e ${nEst} item(ns) no estoque`:''} ✔`);fecharNota();}
+function verNota(src){if(!src)return;$('notaImg').src=src;$('notaVer').classList.remove('hide');}
+async function verNotaId(id){try{const d=await col('notas').doc(id).get();if(d.exists)verNota(d.data().img);else toast('Foto da nota não encontrada');}catch(e){toast('Não foi possível abrir a foto');}}
 
 // app instalável e funcionando sem sinal
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
