@@ -86,7 +86,7 @@ tr.novo td{background:#fff6c9;transition:background 1s}
     <label>Usuário</label><input id="lgUser" autocapitalize="none" autocomplete="username" placeholder="ex.: joao">
     <label>Senha</label><input id="lgPass" type="password" autocomplete="current-password">
     <button class="btn big" id="lgBtn" onclick="entrar()">Entrar</button>
-    <p class="muted" style="margin-top:16px"><a href="#" id="lgTroca" onclick="trocaPrimeiro();return false" style="font-size:12px;color:#999">Instalação: criar conta de administrador</a></p>
+    <p class="muted hide" id="lgInst" style="margin-top:16px"><a href="#" id="lgTroca" onclick="trocaPrimeiro();return false" style="font-size:12px;color:#999">Instalação: criar conta de administrador</a></p>
     <p class="muted" id="lgMsg"></p>
   </div>
 </section>
@@ -593,7 +593,8 @@ auth.onAuthStateChanged(user=>abrir(user));
 async function abrir(user){
   S.unsub.forEach(f=>f());S.unsub=[];S.papel=null;FID=null;LIC=null;renderLic();
   ['appPat','appTrat','appEst','appAdm'].forEach(i=>$(i).classList.add('hide'));
-  if(!user){$('login').classList.remove('hide');$('lgFaz').value=lsGet('fazCod','');$('who').textContent='';$('btnSair').classList.add('hide');setSync();return;}
+  if(!user){$('lgInst').classList.toggle('hide',location.hash!=='#instalar'); // link de instalação só aparece com #instalar no endereço
+    $('login').classList.remove('hide');$('lgFaz').value=lsGet('fazCod','');$('who').textContent='';$('btnSair').classList.add('hide');setSync();return;}
   S.uid=user.uid;
   if(user.email===ADMIN_EMAIL){S.papel='admin';S.nome='Administrador';
     $('login').classList.add('hide');$('btnSair').classList.remove('hide');$('who').innerHTML='Administrador<br>do sistema';setSync();iniciaAdmin();return;}
