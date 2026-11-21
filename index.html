@@ -599,7 +599,10 @@ const TAB_MOD={ord:'ordens',ped:'estoque',mov:'estoque',est:'estoque',his:'estoq
 function aplicaModulos(){
   document.querySelectorAll('.iaBtn').forEach(b=>b.classList.toggle('hide',!LIC.mod.ia));
   if(S.papel==='patrao'){
-    document.querySelectorAll('#nav button').forEach(b=>{const m=TAB_MOD[b.dataset.t];b.classList.toggle('hide',!!m&&!LIC.mod[m]);});
+    // modo simples (sem Ordens e sem Piloto): some a aba Pedidos e o tipo de usuário Tratorista
+    const completo=!!(LIC.mod.ordens||LIC.mod.piloto);
+    document.querySelectorAll('#nav button').forEach(b=>{const m=TAB_MOD[b.dataset.t];b.classList.toggle('hide',(!!m&&!LIC.mod[m])||(b.dataset.t==='ped'&&!completo));});
+    const ot=document.querySelector('#uPapel option[value=tratorista]');if(ot){ot.hidden=!completo;ot.disabled=!completo;if(!completo)$('uPapel').value='estoque';}
     const on=document.querySelector('#nav button.on');if(on&&on.classList.contains('hide')){const f=document.querySelector('#nav button:not(.hide)');if(f)aba(f.dataset.t);}
     $('prEstChk').parentNode.classList.toggle('hide',!LIC.mod.estoque);}
   if(S.papel==='tratorista'){$('trForm').classList.toggle('hide',!LIC.mod.estoque);$('trOrdens').classList.toggle('hide',!LIC.mod.ordens);}
@@ -678,7 +681,7 @@ async function cadastrar(){
     if(auth.currentUser)telaCompletar();}
   $('cBtn').disabled=false;}
 async function criarMinhaFazenda(u,nome,faz,tel,email){
-  const base=slug(faz).replace(/^fazenda-/,'').slice(0,24)||'fazenda',agora=Date.now(),mods={};Object.keys(MODS).forEach(k=>mods[k]=true);
+  const base=slug(faz).replace(/^fazenda-/,'').slice(0,24)||'fazenda',agora=Date.now(),mods={};Object.keys(MODS).forEach(k=>mods[k]=!['ordens','piloto'].includes(k)); // conta nova: estoque + finanças + talhões (modo simples)
   for(let t=0;t<5;t++){
     const cod=t?base+'-'+Math.floor(1000+Math.random()*9000):base;
     const b=db.batch();
