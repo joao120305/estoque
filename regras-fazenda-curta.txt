@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function logado() { return request.auth != null; }
+    function admin()  { return logado() && request.auth.token.email == 'admin@fazenda.app'; }
+    function memPath() { return /databases/$(db)/documents/membros/$(request.auth.uid); }
+    function membro(f) { return logado() && exists(memPath()) && get(memPath()).data.fid == f; }
+    function papel(f, p) { return membro(f) && get(memPath()).data.papel == p; }
+    function dono(f) { return papel(f, 'patrao'); }
+    function lic(f)   { return get(/databases/$(db)/documents/fazendas/$(f)).data.licenca; }
+    function ativa(f) { return request.time.toMillis() < lic(f).validade; }
+    function mod(f, m) { return ativa(f) && lic(f).modulos[m] == true; }
+    match /fazendas/{f} {
+      allow read: if admin() || membro(f);
+      allow write: if admin();
+      allow create: if logado() && !exists(memPath())
+        && request.resource.data.dono == request.auth.uid
+        && request.resource.data.novo == true
+        && (request.resource.data.licenca.validade == 0 || request.resource.data.licenca.validade == 1798772399000)
+        && request.resource.data.valorMensal == 0
+        && request.resource.data.keys().hasOnly(['nome','cod','licenca','novo','valorMensal','contato','email','dono','donoNome','donoLogin','criadaEm']);
+      match /usuarios/{uid} {
+        allow read: if dono(f) || (membro(f) && request.auth.uid == uid);
+        allow create: if logado() && request.auth.uid == uid && !exists(memPath())
+          && getAfter(memPath()).data.fid == f && getAfter(memPath()).data.papel == 'patrao';
+        allow write: if admin() || (dono(f) && ativa(f));
+      }
+      match /talhoes/{id}  { allow read: if membro(f); allow write: if dono(f) && ativa(f); }
+      match /catalogo/{id} { allow read: if membro(f); allow write: if dono(f) && ativa(f); }
+      match /movimentos/{id} {
+        allow read: if dono(f) || papel(f, 'estoque');
+        allow create: if (dono(f) && mod(f, 'estoque')) || (
+          papel(f, 'estoque') && mod(f, 'estoque')
+          && request.resource.data.tipo == 'B'
+          && request.resource.data.pedido is string
+          && request.resource.data.aprovadoPor == request.auth.uid
+          && request.resource.data.qtd is number && request.resource.data.qtd > 0
+        );
+        allow update, delete: if dono(f) && ativa(f);
+      }
+      match /precos/{id}     { allow read: if dono(f); allow write: if dono(f) && mod(f, 'estoque'); }
+      match /financeiro/{id} { allow read: if dono(f); allow write: if dono(f) && mod(f, 'financas'); }
+      match /producao/{id}   { allow read: if dono(f); allow write: if dono(f) && mod(f, 'financas'); }
+      match /notas/{id}      { allow read: if dono(f); allow write: if dono(f) && mod(f, 'ia'); }
+      match /pedidos/{id} {
+        allow read: if dono(f) || papel(f, 'estoque')
+                    || (papel(f, 'tratorista') && resource.data.quem == request.auth.uid);
+        allow create: if papel(f, 'tratorista') && mod(f, 'estoque')
+          && (request.resource.data.origem != 'piloto' || mod(f, 'piloto'))
+          && request.resource.data.quem == request.auth.uid
+          && request.resource.data.status == 'pendente'
+          && request.resource.data.itens is list && request.resource.data.itens.size() > 0
+          && request.resource.data.keys().hasOnly(['itens','tal','talNome','data','obs','quem','nomeQuem','origem','status','criadoEm','ordem','ordemDesc','haCalda']);
+        allow update: if (dono(f) || papel(f, 'estoque')) && mod(f, 'estoque')
+          && resource.data.status == 'pendente'
+          && request.resource.data.status in ['aceito','recusado']
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['status','itensAceitos','respondidoPor','nomeResp','respondidoEm','motivo']);
+        allow delete: if dono(f) && ativa(f);
+      }
+      match /ordens/{id} {
+        allow read: if dono(f) || (papel(f, 'tratorista') && resource.data.para == request.auth.uid);
+        allow create, delete: if dono(f) && mod(f, 'ordens');
+        allow update: if (dono(f) && mod(f, 'ordens')) || (
+          papel(f, 'tratorista') && mod(f, 'ordens') && resource.data.para == request.auth.uid
+          && request.resource.data.status in ['andamento','concluida']
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','iniciadaEm','concluidaEm','haFeito'])
+        );
+      }
+    }
+    match /membros/{uid} {
+      allow read: if admin() || (logado() && request.auth.uid == uid)
+                  || (resource != null && dono(resource.data.fid));
+      allow create: if logado() && request.auth.uid == uid
+        && request.resource.data.papel == 'patrao'
+        && !exists(/databases/$(db)/documents/fazendas/$(request.resource.data.fid))
+        && getAfter(/databases/$(db)/documents/fazendas/$(request.resource.data.fid)).data.dono == request.auth.uid;
+      allow create, update: if admin() || (
+        dono(request.resource.data.fid) && ativa(request.resource.data.fid)
+        && request.resource.data.papel in ['tratorista','estoque']
+        && (resource == null || resource.data.fid == request.resource.data.fid)
+      );
+      allow delete: if admin() || dono(resource.data.fid);
+    }
+    match /sistema/{id} { allow read: if logado(); allow write: if admin(); }
+    match /solicitacoes/{id} {
+      allow read, update, delete: if admin();
+      allow create: if dono(request.resource.data.fid)
+        && request.resource.data.quem == request.auth.uid
+        && request.resource.data.status == 'pendente'
+        && request.resource.data.msg is string && request.resource.data.msg.size() < 2000
+        && request.resource.data.keys().hasOnly(['fid','fazNome','nome','quem','tipo','msg','status','criadoEm']);
+    }
+    match /pagamentos/{id} { allow read, write: if admin(); }
+  }
+}
