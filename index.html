@@ -58,6 +58,7 @@ td.n,th.n{text-align:right;white-space:nowrap}
 .est-list .cat{background:#e8efe5;padding:6px 8px;font-weight:600;font-size:13px;color:#335;margin-top:8px;border-radius:5px}
 .lic{padding:9px 14px;font-size:14px}.lic.aviso{background:#fff3cd;color:#6b4e00}.lic.venc{background:#f8d7d3;color:#7a1f15;font-weight:600}
 .fz-card .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.chip{border:1px solid #c9cfc6;border-radius:16px;padding:5px 10px;font-size:13px;cursor:pointer;user-select:none;background:#fff}
+.bdg:not(:empty){background:#d99a1e;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:3px}
 .chip.on{background:#2f5d34;color:#fff;border-color:#2f5d34}.st{display:inline-block;padding:3px 9px;border-radius:12px;font-size:12px;font-weight:700}
 .st.a{background:#dcefdc;color:#24632c}.st.w{background:#fff3cd;color:#6b4e00}.st.v{background:#f8d7d3;color:#7a1f15}
 tr.novo td{background:#fff6c9;transition:background 1s}
@@ -73,6 +74,7 @@ tr.novo td{background:#fff6c9;transition:background 1s}
 <header>
   <h1>🌱 Estoque da Fazenda</h1>
   <div class="who" id="who"></div>
+  <button id="btnSup" class="hide" onclick="abrirSuporte()" title="Falar com o suporte">💬 Suporte</button>
   <button id="btnSair" class="hide" onclick="sair()">Sair</button>
 </header>
 <div id="sync" class="hide"></div>
@@ -80,14 +82,32 @@ tr.novo td{background:#fff6c9;transition:background 1s}
 
 <!-- ================= LOGIN ================= -->
 <section id="login" class="hide">
-  <div class="card">
+  <div class="card" id="lgEntrar">
     <h2 id="lgT">Entrar</h2>
-    <div id="lgFazBox"><label>Código da fazenda</label><input id="lgFaz" autocapitalize="none" placeholder="ex.: boavista"></div>
-    <label>Usuário</label><input id="lgUser" autocapitalize="none" autocomplete="username" placeholder="ex.: joao">
-    <label>Senha</label><input id="lgPass" type="password" autocomplete="current-password">
+    <label>E-mail (patrão) ou usuário (funcionário)</label><input id="lgUser" autocapitalize="none" autocomplete="username" placeholder="ex.: seuemail@gmail.com ou joao" oninput="lgCampos()">
+    <div id="lgFazBox" class="hide"><label>Código da fazenda</label><input id="lgFaz" autocapitalize="none" placeholder="ex.: boavista"></div>
+    <label>Senha</label><input id="lgPass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')entrar()">
     <button class="btn big" id="lgBtn" onclick="entrar()">Entrar</button>
+    <p style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:12px 0 0"><a href="#" onclick="esqueciSenha();return false">Esqueci minha senha</a><a href="#" onclick="telaLogin('cad');return false"><b>Criar conta de cliente</b></a></p>
     <p class="muted hide" id="lgInst" style="margin-top:16px"><a href="#" id="lgTroca" onclick="trocaPrimeiro();return false" style="font-size:12px;color:#999">Instalação: criar conta de administrador</a></p>
     <p class="muted" id="lgMsg"></p>
+  </div>
+  <div class="card hide" id="lgCad">
+    <h2>Criar conta de cliente</h2>
+    <p class="muted" style="margin-top:0" id="cInfo">Crie seu acesso com seu e-mail e uma senha que só você sabe. Você já entra e conhece o sistema; para lançar e cadastrar, é só liberar a assinatura.</p>
+    <label>Seu nome</label><input id="cNome" autocomplete="name">
+    <label>Nome da fazenda</label><input id="cFaz" placeholder="ex.: Fazenda Boa Vista">
+    <label>WhatsApp (para contato e cobrança)</label><input id="cTel" type="tel" inputmode="tel" placeholder="ex.: (42) 99999-9999">
+    <div id="cAcesso"><label>E-mail (para entrar e recuperar a senha)</label><input id="cEmail" type="email" autocapitalize="none" autocomplete="email">
+    <div class="row"><div><label>Senha (mín. 6)</label><input id="cPass" type="password" autocomplete="new-password"></div><div><label>Repita a senha</label><input id="cPass2" type="password" autocomplete="new-password"></div></div></div>
+    <button class="btn big" id="cBtn" onclick="cadastrar()">Criar minha conta</button>
+    <p style="margin:12px 0 0" id="cVoltar"><a href="#" onclick="telaLogin('entrar');return false">← Já tenho conta</a></p>
+    <p class="muted" id="cMsg"></p>
+  </div>
+  <div class="card hide" id="lgEspera">
+    <h2 id="eTit">⏳ Cadastro aguardando aprovação</h2>
+    <div id="eTxt"></div>
+    <button class="btn sec" onclick="sair(true)">Sair</button>
   </div>
 </section>
 
@@ -139,8 +159,23 @@ tr.novo td{background:#fff6c9;transition:background 1s}
 <section id="appAdm" class="hide">
 <main>
   <div class="kpis" id="adKpis"></div>
-  <div class="card">
-    <h2>➕ Nova fazenda (cliente)</h2>
+  <div id="aCads"></div>
+  <details class="card" id="aSupBox">
+    <summary style="cursor:pointer;font-weight:600">⚙️ Meus dados de cobrança (o cliente vê quando for liberar o sistema)</summary>
+    <div class="row">
+      <div><label>Seu WhatsApp (com DDD)</label><input id="sWhats" type="tel" placeholder="ex.: 42 99999-9999"></div>
+      <div><label>Valor mensal (R$)</label><input id="sValor" type="number" inputmode="decimal" step="any" min="0"></div>
+    </div>
+    <div class="row">
+      <div><label>Chave Pix</label><input id="sPix"></div>
+      <div><label>Nome do recebedor do Pix</label><input id="sPixNome"></div>
+    </div>
+    <label>Recado (opcional)</label><input id="sTexto" placeholder="ex.: Primeiro mês com desconto.">
+    <button class="btn" onclick="salvarSuporte()">Salvar</button>
+  </details>
+  <details class="card">
+    <summary style="cursor:pointer;font-weight:600">➕ Nova fazenda (cliente) — criar manualmente</summary>
+    <p class="muted">O normal é o cliente clicar em "Criar conta de cliente" na tela de login e você aprovar acima. Use isto só se precisar criar por ele.</p>
     <div class="row">
       <div style="flex:2"><label>Nome da fazenda</label><input id="aNome" placeholder="ex.: Fazenda Boa Vista" oninput="if(!aCodMexido)$('aCod').value=slug(this.value).replace(/^fazenda-/,'')"></div>
       <div><label>Código (usado no login)</label><input id="aCod" autocapitalize="none" placeholder="ex.: boavista" oninput="aCodMexido=true;this.value=slug(this.value)"></div>
@@ -159,10 +194,10 @@ tr.novo td{background:#fff6c9;transition:background 1s}
     <div id="aMods" style="display:flex;gap:14px;flex-wrap:wrap"></div>
     <button class="btn" id="aBtn" onclick="criarFazenda()">Criar fazenda e conta do patrão</button>
     <p class="muted">Precisa de internet. Entregue ao cliente: o endereço do sistema, o código da fazenda, o usuário e a senha do patrão.</p>
-  </div>
+  </details>
   <div class="card">
     <div class="row"><div style="flex:2"><input id="aBusca" placeholder="🔍 Buscar fazenda..." oninput="renderAdmin()"></div>
-    <div><select id="aFiltro" onchange="renderAdmin()"><option value="">Todas</option><option value="ativa">Ativas</option><option value="vence">Vencendo em 7 dias</option><option value="venc">Vencidas</option></select></div></div>
+    <div><select id="aFiltro" onchange="renderAdmin()"><option value="">Todas</option><option value="ativa">Ativas</option><option value="vence">Vencendo em 7 dias</option><option value="venc">Vencidas</option><option value="novo">Novos (visualizando)</option></select></div></div>
   </div>
   <div id="aLista"></div>
   <div class="card"><h2>💵 Pagamentos recebidos</h2><div class="scroll"><table id="aPag"></table></div></div>
@@ -438,6 +473,18 @@ tr.novo td{background:#fff6c9;transition:background 1s}
 
 <!-- USUÁRIOS -->
 <section id="t-usu" class="hide">
+  <div class="card" id="meCard">
+    <h2>🔑 Meu acesso</h2>
+    <p style="margin-top:0">Você entra com: <b id="meAtual"></b></p>
+    <p class="muted hide" id="meAviso" style="margin-top:0">Cadastre o seu e-mail: assim você passa a entrar com ele e consegue recuperar a senha se esquecer.</p>
+    <div class="row">
+      <div><label>E-mail novo</label><input id="meEmail" type="email" autocapitalize="none" autocomplete="email"></div>
+      <div><label>Senha nova (deixe vazio para não trocar)</label><input id="meNova" type="password" autocomplete="new-password"></div>
+      <div><label>Senha atual (para confirmar)</label><input id="meSenha" type="password" autocomplete="current-password"></div>
+    </div>
+    <button class="btn" onclick="meSalvar()">Salvar</button>
+    <p class="muted" id="meMsg"></p>
+  </div>
   <div class="card">
     <h2>Novo usuário</h2>
     <div class="row">
@@ -489,6 +536,11 @@ tr.novo td{background:#fff6c9;transition:background 1s}
   <div id="notaCorpo"></div>
 </div></div>
 <div id="notaVer" class="modal hide" onclick="this.classList.add('hide')"><div class="modalBox" style="text-align:center"><img id="notaImg" style="max-width:100%;border-radius:8px"><p class="muted">Toque para fechar</p></div></div>
+<div id="supModal" class="modal hide" onclick="if(event.target===this)fecharSup()"><div class="modalBox" style="max-width:520px">
+  <h2 id="supTit" style="margin-top:0"></h2><div id="supTxt"></div>
+  <label id="supMsgL">Mensagem</label><textarea id="supMsg" rows="3" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid #ccc;border-radius:7px"></textarea>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="supBtn" style="background:#1f8b4c" onclick="enviarSup()">💬 Enviar pelo WhatsApp</button><button class="btn sec" onclick="fecharSup()">Fechar</button></div>
+  <p class="muted" id="supRes"></p></div></div>
 <div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -531,13 +583,14 @@ const diasAte=v=>{const a=new Date(v),b=new Date();a.setHours(0,0,0,0);b.setHour
 const MODS={estoque:'📦 Estoque',financas:'💰 Finanças',ordens:'📋 Ordens',piloto:'🚜 Piloto',ia:'📷 Leitura de notas (IA)'};
 let LIC=null; // {ativa, validade, mod:{}, nome}
 function licOk(m){return !!(LIC&&LIC.ativa&&(!m||LIC.mod[m]));}
-function lerLic(d){const l=d.licenca||{};return{nome:d.nome||'',validade:l.validade||0,ativa:Date.now()<(l.validade||0),mod:l.modulos||{}};}
+function lerLic(d){const l=d.licenca||{};return{nome:d.nome||'',validade:l.validade||0,ativa:Date.now()<(l.validade||0),mod:l.modulos||{},novo:!!d.novo};}
 function renderLic(){const e=$('lic');if(!LIC||S.papel==='admin'){e.classList.add('hide');return;}
   const dias=diasAte(LIC.validade),dt=new Date(LIC.validade).toLocaleDateString('pt-BR');
   e.classList.toggle('hide',LIC.ativa&&dias>7);
   e.className=LIC.ativa?(dias>7?'hide':'lic aviso'):'lic venc';
+  if(!LIC.ativa&&(LIC.novo||!LIC.validade)){e.className='lic venc';e.innerHTML=`👀 Modo de visualização: você pode ver todo o sistema, mas para lançar e cadastrar precisa liberar a assinatura. <button class="btn sm" style="margin:0 0 0 6px" onclick="pedirLiberacao()">🔓 Liberar o sistema</button>`;return;}
   e.innerHTML=LIC.ativa?`⏰ A licença da fazenda vence ${dias===0?'<b>hoje</b>':`em <b>${dias} dia${dias===1?'':'s'}</b>`} (${dt}). Fale com o fornecedor para renovar.`
-    :`🔒 Licença vencida em ${dt}. Os dados continuam aqui para consulta, mas não dá para lançar nada. Fale com o fornecedor do sistema para renovar.`;}
+    :`🔒 Licença vencida em ${dt}. Os dados continuam aqui para consulta, mas não dá para lançar nada. <button class="btn sm" style="margin:0 0 0 6px" onclick="pedirLiberacao()">🔓 Renovar</button>`;}
 const TAB_MOD={ord:'ordens',ped:'estoque',mov:'estoque',est:'estoque',his:'estoque',fin:'financas',des:'financas',pro:'financas'};
 function aplicaModulos(){
   document.querySelectorAll('.iaBtn').forEach(b=>b.classList.toggle('hide',!LIC.mod.ia));
@@ -560,7 +613,7 @@ function setSync(){const s=$('sync');if(!S.papel){s.classList.add('hide');return
   else{s.classList.remove('off');s.textContent=S.pend?'⏳ Enviando para a nuvem...':'✔ Conectado e sincronizado';}}
 window.addEventListener('online',setSync);window.addEventListener('offline',setSync);
 function gravar(batch,okMsg){ // não espera o servidor: funciona sem sinal
-  if(S.papel!=='admin'&&!licOk()){toast('🔒 Licença vencida: não dá para lançar. Fale com o fornecedor do sistema.');return new Promise(()=>{});}
+  if(S.papel!=='admin'&&!licOk()){pedirLiberacao();return new Promise(()=>{});}
   S.pend=true;setSync();
   const p=batch.commit();
   p.then(()=>{S.pend=false;setSync();}).catch(e=>{S.pend=false;setSync();toast('Erro ao gravar: '+(e.code==='permission-denied'?'sem permissão (licença ou módulo)':e.message));});
@@ -568,51 +621,146 @@ function gravar(batch,okMsg){ // não espera o servidor: funciona sem sinal
   return p;}
 
 // ================= login =================
-let modoPrimeiro=false;
-function trocaPrimeiro(){modoPrimeiro=!modoPrimeiro;$('lgFazBox').classList.toggle('hide',modoPrimeiro);
+const PAPEL_DONO='patrao';
+auth.languageCode='pt-BR';
+let modoPrimeiro=false,cadastrando=false;
+function lgCampos(){const u=$('lgUser').value.trim().toLowerCase();$('lgFazBox').classList.toggle('hide',modoPrimeiro||!u||u.includes('@')||u==='admin');}
+function telaLogin(t){if(t==='cad'&&!auth.currentUser){$('cAcesso').classList.remove('hide');$('cVoltar').classList.remove('hide');$('cBtn').textContent='Criar minha conta';}$('lgEntrar').classList.toggle('hide',t!=='entrar');$('lgCad').classList.toggle('hide',t!=='cad');$('lgEspera').classList.toggle('hide',t!=='espera');$('lgMsg').textContent='';$('cMsg').textContent='';}
+function trocaPrimeiro(){modoPrimeiro=!modoPrimeiro;
   $('lgT').textContent=modoPrimeiro?'Criar conta de administrador':'Entrar';$('lgBtn').textContent=modoPrimeiro?'Criar conta':'Entrar';
-  $('lgUser').value=modoPrimeiro?'admin':'';$('lgUser').disabled=modoPrimeiro;
+  $('lgUser').value=modoPrimeiro?'admin':'';$('lgUser').disabled=modoPrimeiro;lgCampos();
   $('lgTroca').textContent=modoPrimeiro?'Voltar para o login':'Instalação: criar conta de administrador';$('lgMsg').textContent='';}
 async function entrar(){
-  const u=$('lgUser').value.trim(),p=$('lgPass').value,f=slug($('lgFaz').value);if(!u||!p){toast('Preencha usuário e senha');return;}
-  const ehAdmin=modoPrimeiro||u.toLowerCase()==='admin';
-  if(!ehAdmin&&!f){toast('Preencha o código da fazenda');return;}
+  const u=$('lgUser').value.trim(),p=$('lgPass').value,f=slug($('lgFaz').value);if(!u||!p){toast('Preencha o e-mail (ou usuário) e a senha');return;}
+  const ehAdmin=modoPrimeiro||u.toLowerCase()==='admin',ehEmail=u.includes('@');
+  if(!ehAdmin&&!ehEmail&&!f){toast('Preencha o código da fazenda');$('lgFazBox').classList.remove('hide');return;}
   $('lgBtn').disabled=true;$('lgMsg').textContent='Aguarde...';
   try{
-    if(!ehAdmin)lsSet('fazCod',f);
+    if(!ehAdmin&&!ehEmail)lsSet('fazCod',f);
     if(modoPrimeiro)await auth.createUserWithEmailAndPassword(ADMIN_EMAIL,p);
     else await auth.signInWithEmailAndPassword(ehAdmin?ADMIN_EMAIL:emailDe(u,f),p);
   }catch(e){
-    const m={'auth/invalid-credential':'Usuário, senha ou código da fazenda errados','auth/wrong-password':'Senha errada','auth/user-not-found':'Usuário não existe nesta fazenda',
+    const m={'auth/invalid-credential':ehEmail?'E-mail ou senha errados':'Usuário, senha ou código da fazenda errados','auth/wrong-password':'Senha errada','auth/user-not-found':ehEmail?'Não existe conta com esse e-mail':'Usuário não existe nesta fazenda',
+      'auth/invalid-email':'E-mail inválido','auth/too-many-requests':'Muitas tentativas. Espere alguns minutos ou use "Esqueci minha senha".',
       'auth/email-already-in-use':'A conta de administrador já existe. Entre com ela.','auth/weak-password':'Senha fraca (mínimo 6 caracteres)','auth/network-request-failed':'Sem internet. O primeiro login precisa de sinal.'};
     $('lgMsg').textContent=m[e.code]||e.message;}
   $('lgBtn').disabled=false;}
-function sair(){if(!confirm('Sair desta conta?'))return;S.unsub.forEach(f=>f());S.unsub=[];auth.signOut();}
+async function esqueciSenha(){
+  const u=$('lgUser').value.trim().toLowerCase();
+  if(!u.includes('@')){$('lgMsg').innerHTML='Digite o seu <b>e-mail</b> no campo acima e clique de novo em "Esqueci minha senha".<br>Funcionário (tratorista, estoque) não tem e-mail: peça ao patrão para criar uma senha nova.';$('lgUser').focus();return;}
+  if(!navigator.onLine){toast('Precisa de internet');return;}
+  try{await auth.sendPasswordResetEmail(u);$('lgMsg').innerHTML=`📧 Se existir uma conta com <b>${esc(u)}</b>, chegou um e-mail com o link para criar uma senha nova. Veja também a caixa de spam.`;}
+  catch(e){$('lgMsg').textContent=e.code==='auth/invalid-email'?'E-mail inválido':'Erro: '+(e.message||e.code);}}
+async function cadastrar(){
+  const comp=!!auth.currentUser; // conta já criada, falta a fazenda
+  const nome=$('cNome').value.trim(),faz=$('cFaz').value.trim(),tel=$('cTel').value.trim(),email=comp?auth.currentUser.email:$('cEmail').value.trim().toLowerCase(),p=$('cPass').value;
+  if(!nome||!faz){toast('Preencha seu nome e o nome da fazenda');return;}
+  if(String(tel).replace(/\D/g,'').length<10){toast('Preencha o WhatsApp com DDD');return;}
+  if(!comp){
+    if(!email.includes('@')){toast('Preencha um e-mail válido');return;}
+    if(email.endsWith('@'+DOMINIO_LOGIN)){toast('Use o seu e-mail de verdade');return;}
+    if(p.length<6){toast('A senha precisa ter pelo menos 6 caracteres');return;}
+    if(p!==$('cPass2').value){toast('As duas senhas estão diferentes');return;}}
+  if(!navigator.onLine){toast('Precisa de internet para criar a conta');return;}
+  $('cBtn').disabled=true;$('cMsg').textContent='Aguarde...';cadastrando=true;
+  try{
+    let u=auth.currentUser;
+    if(!comp){u=(await auth.createUserWithEmailAndPassword(email,p)).user;try{await u.sendEmailVerification();}catch(e){}}
+    await criarMinhaFazenda(u,nome,faz,tel,email);
+    cadastrando=false;await abrir(auth.currentUser);
+  }catch(e){cadastrando=false;
+    const m={'auth/email-already-in-use':'Já existe uma conta com esse e-mail. Volte e clique em "Entrar" (ou "Esqueci minha senha").','auth/invalid-email':'E-mail inválido','auth/weak-password':'Senha fraca (mínimo 6 caracteres)','auth/network-request-failed':'Sem internet.'};
+    $('cMsg').textContent=m[e.code]||('Erro: '+(e.message||e.code));
+    if(auth.currentUser)telaCompletar();}
+  $('cBtn').disabled=false;}
+async function criarMinhaFazenda(u,nome,faz,tel,email){
+  const base=slug(faz).replace(/^fazenda-/,'').slice(0,24)||'fazenda',agora=Date.now(),mods={};Object.keys(MODS).forEach(k=>mods[k]=true);
+  for(let t=0;t<5;t++){
+    const cod=t?base+'-'+Math.floor(1000+Math.random()*9000):base;
+    const b=db.batch();
+    b.set(raiz('fazendas').doc(cod),{nome:faz,cod,licenca:{validade:0,modulos:mods},novo:true,valorMensal:0,contato:tel,email,dono:u.uid,donoNome:nome,donoLogin:email,criadaEm:agora});
+    b.set(raiz('membros').doc(u.uid),{fid:cod,papel:PAPEL_DONO,nome,login:email,criadoEm:agora});
+    b.set(raiz('fazendas').doc(cod).collection('usuarios').doc(u.uid),{nome,papel:PAPEL_DONO,login:email,criadoEm:agora});
+    try{await b.commit();return cod;}catch(e){if(e.code!=='permission-denied')throw e;} // código já usado: tenta outro
+  }
+  throw new Error('Não foi possível criar a fazenda. Tente outro nome.');}
+function telaCompletar(){ // conta existe mas sem fazenda (ex.: caiu a internet no meio do cadastro)
+  $('login').classList.remove('hide');telaLogin('cad');$('cAcesso').classList.add('hide');$('cVoltar').classList.add('hide');
+  $('cInfo').innerHTML=`Falta só criar a sua fazenda para a conta <b>${esc(auth.currentUser.email)}</b>.`;$('cBtn').textContent='Criar minha fazenda';}
+function telaEspera(c){
+  telaLogin('espera');$('login').classList.remove('hide');$('eTit').textContent='Sem acesso';
+  $('eTxt').innerHTML='<p>Esta conta não está ligada a nenhuma fazenda.</p><p class="muted">Se você é funcionário, peça ao patrão.</p>';}
+// ===== suporte / liberação =====
+let SUP=null,supTipo='';
+async function lerSuporte(){try{const d=await raiz('sistema').doc('suporte').get();SUP=d.exists?d.data():{};}catch(e){SUP=SUP||{};}return SUP;}
+function zap(n){n=String(n||'').replace(/\D/g,'');return n.length&&n.length<=11?'55'+n:n;}
+async function pedirLiberacao(){
+  if(S.papel&&S.papel!==PAPEL_DONO){toast('🔒 Sistema bloqueado. Avise o patrão.');return;}
+  await lerSuporte();supTipo='liberacao';
+  $('supTit').textContent=LIC&&LIC.validade?'🔒 Renovar a assinatura':'🔓 Liberar o sistema';
+  $('supTxt').innerHTML=`<p>Você está no <b>modo de visualização</b>: dá para ver tudo, mas para lançar, cadastrar e alterar é preciso ${LIC&&LIC.validade?'renovar':'ativar'} a assinatura.</p>`
+   +(SUP.valor?`<p>Valor: <b>${fm(SUP.valor)}/mês</b></p>`:'')+(SUP.pix?`<p>Chave Pix: <b>${esc(SUP.pix)}</b>${SUP.pixNome?' ('+esc(SUP.pixNome)+')':''} <button class="btn sm sec" onclick="navigator.clipboard&&navigator.clipboard.writeText(${esc(JSON.stringify(SUP.pix))}).then(()=>toast('Chave Pix copiada'))">Copiar</button></p>`:'')
+   +(SUP.texto?`<p class="muted">${esc(SUP.texto)}</p>`:'')+'<p>Depois de pagar, mande o comprovante pelo WhatsApp. Assim que for confirmado, o sistema libera sozinho.</p>';
+  $('supMsg').value=`Olá! Quero ${LIC&&LIC.validade?'renovar':'liberar'} o sistema para a ${LIC?LIC.nome:''} (código ${FID}).`;
+  $('supMsgL').textContent='Mensagem';$('supRes').textContent='';$('supModal').classList.remove('hide');}
+async function abrirSuporte(){
+  await lerSuporte();supTipo='suporte';$('supTit').textContent='💬 Falar com o suporte';
+  $('supTxt').innerHTML='<p class="muted" style="margin-top:0">Dúvida, problema, pedido de atualização ou de alguma função nova: escreva aqui.</p>';
+  $('supMsg').value='';$('supMsgL').textContent='O que você precisa?';$('supRes').textContent='';$('supModal').classList.remove('hide');$('supMsg').focus();}
+function fecharSup(){$('supModal').classList.add('hide');}
+function enviarSup(){
+  const msg=$('supMsg').value.trim();if(!msg){toast('Escreva a mensagem');return;}
+  // registra no painel do administrador (vai mesmo sem sinal)
+  db.collection('solicitacoes').add({fid:FID,fazNome:LIC?LIC.nome:'',nome:S.nome,quem:S.uid,tipo:supTipo,msg,status:'pendente',criadoEm:Date.now()}).catch(()=>{});
+  const n=zap(SUP&&SUP.whats);
+  const txt=msg+(supTipo==='suporte'?`\n(${LIC?LIC.nome:''} · código ${FID})`:'');
+  if(n)window.open('https://wa.me/'+n+'?text='+encodeURIComponent(txt),'_blank');
+  $('supRes').textContent=n?'✔ Pedido registrado. Se o WhatsApp não abriu, toque de novo no botão.':'✔ Pedido registrado. O fornecedor vai entrar em contato.';}
+function meAcesso(){if(!$('meAtual')||!auth.currentUser)return;const e=auth.currentUser.email||'',fake=e.endsWith('@'+DOMINIO_LOGIN);
+  $('meAtual').textContent=fake?`usuário ${e.split('@')[0].split('.')[0]} + código ${FID}`:e;$('meAviso').classList.toggle('hide',!fake);}
+async function meSalvar(){const u=auth.currentUser,em=$('meEmail').value.trim().toLowerCase(),nv=$('meNova').value,sa=$('meSenha').value;
+  if(!em&&!nv){toast('Preencha o e-mail novo ou a senha nova');return;}
+  if(em&&(!em.includes('@')||em.endsWith('@'+DOMINIO_LOGIN))){toast('E-mail inválido');return;}
+  if(nv&&nv.length<6){toast('A senha nova precisa ter pelo menos 6 caracteres');return;}
+  if(!sa){toast('Digite a senha atual para confirmar');return;}
+  if(!navigator.onLine){toast('Precisa de internet');return;}
+  try{await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email,sa));
+    const ms=[];
+    if(nv){await u.updatePassword(nv);ms.push('✔ Senha trocada.');}
+    if(em){await u.verifyBeforeUpdateEmail(em);ms.push(`📧 Mandamos um link para <b>${esc(em)}</b>. Abra o e-mail e clique no link (veja o spam). Depois disso você entra com esse e-mail e a sua senha.`);}
+    $('meMsg').innerHTML=ms.join('<br>');['meEmail','meNova','meSenha'].forEach(i=>$(i).value='');
+  }catch(e){const m={'auth/invalid-credential':'Senha atual errada','auth/wrong-password':'Senha atual errada','auth/email-already-in-use':'Esse e-mail já é usado por outra conta','auth/invalid-email':'E-mail inválido','auth/too-many-requests':'Muitas tentativas. Espere uns minutos.'};
+    $('meMsg').textContent=m[e.code]||('Erro: '+(e.message||e.code));}}
+function sair(sem){if(!sem&&!confirm('Sair desta conta?'))return;S.unsub.forEach(f=>f());S.unsub=[];auth.signOut();}
 
-auth.onAuthStateChanged(user=>abrir(user));
+auth.onAuthStateChanged(user=>{if(!cadastrando)abrir(user);});
 async function abrir(user){
   S.unsub.forEach(f=>f());S.unsub=[];S.papel=null;FID=null;LIC=null;renderLic();
-  ['appPat','appTrat','appEst','appAdm'].forEach(i=>$(i).classList.add('hide'));
+  ['appPat','appTrat','appEst','appAdm'].forEach(i=>$(i).classList.add('hide'));$('btnSup').classList.add('hide');
   if(!user){$('lgInst').classList.toggle('hide',location.hash!=='#instalar'); // link de instalação só aparece com #instalar no endereço
-    $('login').classList.remove('hide');$('lgFaz').value=lsGet('fazCod','');$('who').textContent='';$('btnSair').classList.add('hide');setSync();return;}
+    telaLogin('entrar');lgCampos();$('login').classList.remove('hide');$('lgFaz').value=lsGet('fazCod','');$('who').textContent='';$('btnSair').classList.add('hide');setSync();return;}
   S.uid=user.uid;
   if(user.email===ADMIN_EMAIL){S.papel='admin';S.nome='Administrador';
     $('login').classList.add('hide');$('btnSair').classList.remove('hide');$('who').innerHTML='Administrador<br>do sistema';setSync();iniciaAdmin();return;}
   let info=lsGet('membro_'+user.uid,null);
   try{const d=await raiz('membros').doc(user.uid).get();if(d.exists){info=d.data();lsSet('membro_'+user.uid,info);}else info=null;}
   catch(e){/* sem sinal: usa o que está guardado */}
-  if(!info||!info.papel||!info.fid){$('login').classList.remove('hide');$('lgMsg').textContent='Este usuário não tem acesso. Peça ao patrão.';auth.signOut();return;}
+  if(!info||!info.papel||!info.fid){ // conta sem fazenda
+    $('btnSair').classList.remove('hide');$('who').textContent=user.email||'';
+    if(!navigator.onLine){$('login').classList.remove('hide');telaLogin('entrar');$('lgMsg').textContent='Sem internet. Conecte para entrar.';return;}
+    if(String(user.email||'').endsWith('@'+DOMINIO_LOGIN)){$('login').classList.remove('hide');telaLogin('entrar');$('lgMsg').textContent='Este usuário não tem acesso. Peça ao patrão.';auth.signOut();return;}
+    telaCompletar();return;}
   FID=info.fid;S.papel=info.papel;S.nome=info.nome||'';
   LIC=lsGet('lic_'+FID,null);
   await new Promise(res=>{let pri=true;S.unsub.push(raiz('fazendas').doc(FID).onSnapshot(d=>{
       if(d.exists){LIC=lerLic(d.data());lsSet('lic_'+FID,LIC);}
       renderLic();if(!pri&&LIC)aplicaModulos();if(pri){pri=false;res();}},e=>{if(pri){pri=false;res();}}));});
   if(!LIC){$('login').classList.remove('hide');$('lgMsg').textContent='Não foi possível ler a fazenda. Conecte na internet e tente de novo.';return;}
-  $('login').classList.add('hide');$('btnSair').classList.remove('hide');
+  $('login').classList.add('hide');telaLogin('entrar');$('btnSair').classList.remove('hide');
   $('who').innerHTML=esc(S.nome)+'<br>'+esc(LIC.nome||FID)+' · '+({patrao:'Patrão',tratorista:'Tratorista',estoque:'Estoque'}[S.papel]||'');
   setSync();renderLic();
   if(S.papel==='patrao')iniciaPatrao();else if(S.papel==='tratorista')iniciaTrat();else if(S.papel==='estoque')iniciaEst();
-  aplicaModulos();
+  aplicaModulos();meAcesso();$('btnSup').classList.toggle('hide',S.papel!==PAPEL_DONO);
 }
 
 function escuta(nome,fn){S.unsub.push(col(nome).onSnapshot(s=>{fn(s);},e=>toast('Erro ao ler '+nome+': '+e.code)));}
@@ -635,13 +783,31 @@ function talhoesOrdenados(){return Object.values(S.T).sort((a,b)=>ord(a.nome,b.n
 
 
 // ================= ADMINISTRADOR =================
-let aCodMexido=false;const AD={F:{},Pg:[]};
+let aCodMexido=false;const AD={F:{},Pg:[],Sol:[]};let nCadAnt=-1;
 function iniciaAdmin(){
   $('appAdm').classList.remove('hide');
   $('aMods').innerHTML=Object.entries(MODS).map(([k,n])=>`<label class="chk" style="margin:4px 0"><input type="checkbox" value="${k}" checked> ${n}</label>`).join('');
-  S.unsub.push(raiz('fazendas').onSnapshot(s=>{AD.F=mapa(s);agenda(renderAdmin);},e=>toast('Erro: '+e.code)));
-  S.unsub.push(raiz('pagamentos').onSnapshot(s=>{AD.Pg=lista(s);agenda(renderAdmin);},e=>toast('Erro: '+e.code)));}
+  S.unsub.push(raiz('fazendas').onSnapshot(s=>{AD.F=mapa(s);agenda(renderAdmin);renderCads();},e=>toast('Erro: '+e.code)));
+  S.unsub.push(raiz('pagamentos').onSnapshot(s=>{AD.Pg=lista(s);agenda(renderAdmin);},e=>toast('Erro: '+e.code)));
+  S.unsub.push(raiz('solicitacoes').onSnapshot(s=>{AD.Sol=lista(s);const n=AD.Sol.filter(c=>c.status==='pendente').length;
+    if(nCadAnt>=0&&n>nCadAnt){bip();toast('📨 Nova solicitação de cliente!');}nCadAnt=n;renderCads();},e=>toast('Erro ao ler solicitações: '+e.code)));
+  raiz('sistema').doc('suporte').get().then(d=>{const v=d.exists?d.data():{};$('sWhats').value=v.whats||'';$('sValor').value=v.valor||'';$('sPix').value=v.pix||'';$('sPixNome').value=v.pixNome||'';$('sTexto').value=v.texto||'';
+    if(!v.whats)$('aSupBox').open=true;}).catch(()=>{});}
+function salvarSuporte(){const b=db.batch();b.set(raiz('sistema').doc('suporte'),{whats:$('sWhats').value.trim(),valor:num($('sValor').value),pix:$('sPix').value.trim(),pixNome:$('sPixNome').value.trim(),texto:$('sTexto').value.trim()});gravar(b,'Dados de cobrança salvos ✔');}
+function renderCads(){
+  const Lsol=(AD.Sol||[]).filter(c=>c.status==='pendente').sort((a,b)=>a.criadoEm-b.criadoEm);
+  const Lnov=Object.values(AD.F).filter(f=>stFaz(f).k==='novo').sort((a,b)=>(a.criadaEm||0)-(b.criadaEm||0));
+  const tel=f=>{const c=AD.F[f];return c&&c.contato?` · <a href="https://wa.me/${zap(c.contato)}" target="_blank">📞 ${esc(c.contato)}</a>`:'';};
+  $('aCads').innerHTML=(Lsol.length?`<div class="card" style="border:2px solid #d99a1e"><h2 style="margin-top:0">📨 Solicitações dos clientes <span class="bdg">${Lsol.length}</span></h2>`+Lsol.map(c=>`<div style="border-top:1px solid #e3e3e3;padding:8px 0">
+     <b>${c.tipo==='liberacao'?'🔓 Quer liberar/renovar':'💬 Suporte'}</b> · <b>${esc(c.fazNome||c.fid)}</b> · ${esc(c.nome||'')}${tel(c.fid)} <span class="muted">· ${new Date(c.criadoEm).toLocaleString('pt-BR')}</span>
+     <div style="margin:4px 0;white-space:pre-wrap">${esc(c.msg)}</div>
+     <button class="btn sm sec" onclick="solOk('${c.id}')">✔ Resolvida</button>${c.tipo==='liberacao'&&AD.F[c.fid]?` <button class="btn sm" onclick="document.getElementById('fz_${c.fid}').scrollIntoView({behavior:'smooth'})">Ir para a fazenda ↓</button>`:''}</div>`).join('')+'</div>':'')
+   +(Lnov.length?`<div class="card" style="border:2px solid #2563a8"><h2 style="margin-top:0">🆕 Clientes novos (modo visualização) <span class="bdg" style="background:#2563a8">${Lnov.length}</span></h2>
+     <p class="muted" style="margin-top:0">Criaram a conta sozinhos e estão conhecendo o sistema. Para liberar, use "+7 dias" (teste) ou "Registrar pagamento" no cartão da fazenda.</p>`
+     +Lnov.map(f=>`<div style="border-top:1px solid #e3e3e3;padding:6px 0"><b>${esc(f.nome)}</b> · ${esc(f.donoNome||'')} · ${esc(f.email||f.donoLogin||'')}${tel(f.id)} <span class="muted">· desde ${new Date(f.criadaEm||0).toLocaleDateString('pt-BR')}</span> <button class="btn sm" onclick="document.getElementById('fz_${f.id}').scrollIntoView({behavior:'smooth'})">Abrir ↓</button></div>`).join('')+'</div>':'');}
+function solOk(id){const b=db.batch();b.set(raiz('solicitacoes').doc(id),{status:'resolvida',resolvidaEm:Date.now()},{merge:true});gravar(b,'Marcada como resolvida');}
 function stFaz(f){const v=(f.licenca||{}).validade||0,d=diasAte(v);
+  if(f.novo&&v<=Date.now())return{k:'novo',c:'w',t:'🆕 Novo · só visualizando'};
   return v<=Date.now()?{k:'venc',c:'v',t:`Vencida há ${Math.max(1,-d)} dia${-d===1?'':'s'}`}:d<=7?{k:'vence',c:'w',t:(d===0?'Vence hoje':`Vence em ${d} dia${d===1?'':'s'}`)}:{k:'ativa',c:'a',t:`Ativa até ${new Date(v).toLocaleDateString('pt-BR')}`};}
 function maisMeses(base,meses){const d=new Date(Math.max(base||0,Date.now()));d.setMonth(d.getMonth()+meses);d.setHours(23,59,59,0);return d.getTime();}
 async function criarFazenda(){
@@ -664,7 +830,7 @@ async function criarFazenda(){
     ['aNome','aCod','aPNome','aPUser','aPPass','aValor','aCont'].forEach(i=>$(i).value='');aCodMexido=false;document.querySelectorAll('#aMods input').forEach(i=>i.checked=true);
   }catch(e){toast(e.code==='auth/email-already-in-use'?'Esse usuário já existe nessa fazenda':'Erro: '+(e.message||e.code));}
   $('aBtn').disabled=false;}
-function salvarLic(fid,lic,msg){const f=AD.F[fid];const b=db.batch();b.set(raiz('fazendas').doc(fid),{licenca:{validade:lic.validade,modulos:lic.modulos}},{merge:true});gravar(b,msg);}
+function salvarLic(fid,lic,msg){const f=AD.F[fid];const b=db.batch();b.set(raiz('fazendas').doc(fid),{licenca:{validade:lic.validade,modulos:lic.modulos},...(lic.validade>Date.now()?{novo:false}:{})},{merge:true});gravar(b,msg);}
 function adMod(fid,m){const l=AD.F[fid].licenca||{};const mods={...(l.modulos||{})};mods[m]=!mods[m];salvarLic(fid,{validade:l.validade,modulos:mods},`${MODS[m]} ${mods[m]?'liberado':'bloqueado'}`);}
 function adEstender(fid,meses,dias){const l=AD.F[fid].licenca||{};let v=dias?Math.max(l.validade||0,Date.now())+dias*DIA:maisMeses(l.validade,meses);
   salvarLic(fid,{validade:v,modulos:l.modulos||{}},'Licença até '+new Date(v).toLocaleDateString('pt-BR'));}
@@ -674,24 +840,24 @@ function adPagar(fid){const f=AD.F[fid],val=num($('ad_pv_'+fid).value),m=Math.ma
   if(val<=0){toast('Informe o valor recebido');return;}
   const l=f.licenca||{},v=maisMeses(l.validade,m),b=db.batch();
   b.set(raiz('pagamentos').doc(),{fid,fazNome:f.nome,valor:val,meses:m,forma:$('ad_pf_'+fid).value,data:hoje(),validadeNova:v,criadoEm:Date.now()});
-  b.set(raiz('fazendas').doc(fid),{licenca:{validade:v,modulos:l.modulos||{}}},{merge:true});
+  b.set(raiz('fazendas').doc(fid),{licenca:{validade:v,modulos:l.modulos||{}},novo:false},{merge:true});
   gravar(b,`💵 Pagamento registrado · ${f.nome} até ${new Date(v).toLocaleDateString('pt-BR')}`);}
 function adExcluirPag(id){if(!confirm('Excluir este pagamento da lista? (a validade não muda)'))return;const b=db.batch();b.delete(raiz('pagamentos').doc(id));gravar(b,'Pagamento excluído');}
 function renderAdmin(){
   const fs=Object.values(AD.F).sort((a,b)=>ord(a.nome,b.nome)),mes=hoje().slice(0,7);
-  const n={ativa:0,vence:0,venc:0};fs.forEach(f=>n[stFaz(f).k]++);
+  const n={ativa:0,vence:0,venc:0,novo:0};fs.forEach(f=>n[stFaz(f).k]++);
   const recMes=AD.Pg.filter(p=>p.data.startsWith(mes)).reduce((s,p)=>s+p.valor,0);
   const prev=fs.filter(f=>stFaz(f).k!=='venc').reduce((s,f)=>s+(f.valorMensal||0),0);
   $('adKpis').innerHTML=`<div class="kpi"><small>Fazendas ativas</small><b class="pos">${n.ativa+n.vence}</b><small>${fs.length} no total</small></div>
-   <div class="kpi"><small>Vencendo em 7 dias</small><b style="color:#9a6a00">${n.vence}</b></div><div class="kpi"><small>Vencidas</small><b class="neg">${n.venc}</b></div>
+   <div class="kpi"><small>Vencendo em 7 dias</small><b style="color:#9a6a00">${n.vence}</b></div><div class="kpi"><small>Vencidas</small><b class="neg">${n.venc}</b><small>${n.novo} cliente(s) novo(s) só visualizando</small></div>
    <div class="kpi"><small>Recebido no mês</small><b class="pos">${fm(recMes)}</b><small>mensalidades ativas: ${fm(prev)}</small></div>`;
   const b=$('aBusca').value.toLowerCase(),fl=$('aFiltro').value;
   const ae=document.activeElement;if(ae&&$('aLista').contains(ae)&&ae.tagName!=='BUTTON')return; // não redesenha enquanto digita
   $('aLista').innerHTML=fs.filter(f=>(f.nome+' '+f.cod+' '+(f.donoNome||'')).toLowerCase().includes(b)&&(!fl||stFaz(f).k===fl||(fl==='ativa'&&stFaz(f).k==='vence'))).map(f=>{
     const st=stFaz(f),l=f.licenca||{},m=l.modulos||{},id=f.id,vd=new Date(l.validade||Date.now());vd.setMinutes(vd.getMinutes()-vd.getTimezoneOffset());
     const pg=AD.Pg.filter(p=>p.fid===id).sort((a,b)=>b.criadoEm-a.criadoEm)[0];
-    return `<div class="card fz-card"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><div><h2 style="margin:0">${esc(f.nome)}</h2>
-      <span class="muted">código <b>${esc(f.cod||id)}</b> · patrão ${esc(f.donoNome||'')} (usuário <b>${esc(f.donoLogin||'')}</b>)${f.contato?' · 📞 '+esc(f.contato):''}${f.valorMensal?' · '+fm(f.valorMensal)+'/mês':''}</span></div>
+    return `<div class="card fz-card" id="fz_${id}"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><div><h2 style="margin:0">${esc(f.nome)}</h2>
+      <span class="muted">código <b>${esc(f.cod||id)}</b> · patrão ${esc(f.donoNome||'')} (${String(f.donoLogin||'').includes('@')?'e-mail':'usuário'} <b>${esc(f.donoLogin||'')}</b>)${f.contato?' · 📞 '+esc(f.contato):''}${f.valorMensal?' · '+fm(f.valorMensal)+'/mês':''}</span></div>
       <div><span class="st ${st.c}">${st.t}</span></div></div>
       <div class="chips">${Object.entries(MODS).map(([k,nm])=>`<span class="chip ${m[k]?'on':''}" onclick="adMod('${id}','${k}')">${m[k]?'✔ ':''}${nm}</span>`).join('')}</div>
       <div class="row" style="align-items:flex-end">
@@ -1182,6 +1348,7 @@ function renderHis(){
 // --- usuários
 async function criarUsuario(){
   const nome=$('uNome').value.trim(),u=$('uUser').value.trim().toLowerCase(),p=$('uPass').value,papel=$('uPapel').value;
+  if(!licOk()){pedirLiberacao();return;}
   if(!nome||!u||p.length<6){toast('Preencha nome, usuário e senha (mín. 6)');return;}
   if(!navigator.onLine){toast('Precisa de internet para criar usuário');return;}
   $('uBtn').disabled=true;
@@ -1229,7 +1396,7 @@ function csv(q){const c=v=>'"'+String(v??'').replace(/"/g,'""')+'"',n=v=>String(
 // =====================================================================
 const IA_VERSAO_SDK='12.5.0';
 let IA_MODEL=null,NOTA=null;
-function abrirLeitorNota(){if(!LIC||!LIC.mod.ia){toast('O módulo de leitura de notas não está liberado. Fale com o fornecedor do sistema.');return;}$('notaFile').value='';$('notaFile').click();}
+function abrirLeitorNota(){if(!licOk()){pedirLiberacao();return;}if(!LIC||!LIC.mod.ia){toast('O módulo de leitura de notas não está liberado. Fale com o fornecedor do sistema.');return;}$('notaFile').value='';$('notaFile').click();}
 function fecharNota(){$('notaModal').classList.add('hide');NOTA=null;}
 function lerArquivo(f){return new Promise((ok,er)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=er;r.readAsDataURL(f);});}
 function reduzir(dataUrl,max,q){return new Promise(ok=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');
