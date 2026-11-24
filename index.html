@@ -213,6 +213,7 @@ tr.novo td{background:#fff6c9;transition:background 1s}
   <button data-t="est">Estoque</button>
   <button data-t="fin">Finanças</button>
   <button data-t="des">Despesas</button>
+  <button data-t="maq">Máquinas</button>
   <button data-t="pag">Contas a pagar <span id="pagBadge" class="bdg"></span></button>
   <button data-t="tal">Talhões</button>
   <button data-t="pro">Produção</button>
@@ -387,6 +388,49 @@ tr.novo td{background:#fff6c9;transition:background 1s}
     <div class="card" style="min-width:260px"><h2>🧪 Insumos por tipo</h2><div class="scroll"><table id="dInsT"></table></div></div>
     <div class="card" style="min-width:260px"><h2>Por máquina (peças + combustível)</h2><div class="scroll"><table id="dMaqT"></table></div></div>
     <div class="card" style="min-width:260px"><h2>Por funcionário</h2><div class="scroll"><table id="dFuncT"></table></div></div>
+  </div>
+</section>
+
+<section id="t-maq" class="hide">
+  <div class="kpis" id="mqKpis"></div>
+  <div class="card">
+    <h2>⛽ Abastecimento</h2>
+    <div class="row">
+      <div style="flex:2"><label>Máquina</label><select id="abMaq" onchange="abSugere()"></select></div>
+      <div><label>Data</label><input id="abData" type="date"></div>
+    </div>
+    <div class="row">
+      <div><label>Combustível</label><select id="abComb" onchange="abSugere(true)"></select></div>
+      <div><label>Litros</label><input id="abL" type="number" inputmode="decimal" step="any" min="0" oninput="abCalc()"></div>
+      <div><label>Preço por litro (R$)</label><input id="abP" type="number" inputmode="decimal" step="any" min="0" oninput="abCalc()"></div>
+      <div><label>Horímetro / km (opcional)</label><input id="abH" type="number" inputmode="decimal" step="any" min="0" placeholder="ex.: 4520"></div>
+    </div>
+    <div class="row">
+      <div style="flex:2"><label>Onde entra o custo</label><select id="abOnde"></select></div>
+      <div><label>Posto / observação</label><input id="abObs" placeholder="ex.: Posto Trevo, tanque da fazenda"></div>
+    </div>
+    <p id="abTot" style="font-size:18px;margin:6px 0"></p>
+    <button class="btn" onclick="salvarAbast()">Salvar abastecimento</button>
+    <p class="muted" style="margin:8px 0 0">O abastecimento entra nas <b>Despesas</b> como combustível e no custo do talhão escolhido.</p>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">🚜 Maquinário</h2>
+      <select id="mqPer" onchange="renderMaq()" style="max-width:200px;margin:0"><option value="mes">Este mês</option><option value="12">Últimos 12 meses</option><option value="ano">Este ano</option><option value="tudo" selected>Tudo</option></select></div>
+    <div class="scroll"><table id="mqLista"></table></div>
+    <details id="mqForm" style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">➕ Cadastrar máquina</summary>
+      <div class="row">
+        <div style="flex:2"><label>Nome</label><input id="mqNome" placeholder="ex.: Trator JD 6150J, Colheitadeira, Hilux"></div>
+        <div><label>Tipo</label><select id="mqTipo"><option>Trator</option><option>Colheitadeira</option><option>Pulverizador</option><option>Plantadeira</option><option>Caminhão</option><option>Caminhonete / carro</option><option>Moto</option><option>Gerador</option><option>Outro</option></select></div>
+        <div><label>Combustível</label><select id="mqComb"></select></div>
+      </div>
+      <input type="hidden" id="mqId">
+      <button class="btn" id="mqBtn" onclick="salvarMaq()">Salvar máquina</button> <button class="btn sec hide" id="mqCanc" onclick="cancelaMaq()">Cancelar</button>
+    </details>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">📜 Abastecimentos</h2>
+      <select id="abFiltro" onchange="renderMaq()" style="max-width:240px;margin:0"></select></div>
+    <div class="scroll"><table id="abLista"></table></div>
   </div>
 </section>
 
@@ -621,7 +665,7 @@ const DIA=86400000;
 const diasAte=v=>{const a=new Date(v),b=new Date();a.setHours(0,0,0,0);b.setHours(0,0,0,0);return Math.round((a-b)/DIA);}; // por dia do calendário
 
 // ===== licença =====
-const MODS={estoque:'📦 Estoque',financas:'💰 Finanças',ordens:'📋 Ordens',piloto:'🚜 Piloto',ia:'📷 Leitura de notas (IA)'};
+const MODS={estoque:'📦 Estoque',financas:'💰 Finanças',maq:'🚜 Máquinas e abastecimento',ordens:'📋 Ordens',piloto:'🛰️ Piloto',ia:'📷 Leitura de notas (IA)'};
 // Teste grátis: toda conta nova entra liberada até esta data (31/12/2026 23:59:59, horário de Brasília). Deve ser o MESMO número das regras do Firestore.
 const TESTE_ATE=1798772399000;
 let LIC=null; // {ativa, validade, mod:{}, nome}
@@ -636,8 +680,8 @@ function renderLic(){const e=$('lic');if(!LIC||S.papel==='admin'){e.classList.ad
   if(!LIC.ativa&&(LIC.novo||!LIC.validade)){e.className='lic venc';e.innerHTML=`👀 Modo de visualização: você pode ver todo o sistema, mas para lançar e cadastrar precisa liberar a assinatura. <button class="btn sm" style="margin:0 0 0 6px" onclick="pedirLiberacao()">🔓 Liberar o sistema</button>`;return;}
   e.innerHTML=LIC.ativa?`⏰ A licença da fazenda vence ${dias===0?'<b>hoje</b>':`em <b>${dias} dia${dias===1?'':'s'}</b>`} (${dt}). Fale com o fornecedor para renovar.`
     :`🔒 Licença vencida em ${dt}. Os dados continuam aqui para consulta, mas não dá para lançar nada. <button class="btn sm" style="margin:0 0 0 6px" onclick="pedirLiberacao()">🔓 Renovar</button>`;}
-const COLS_TODAS=['catalogo','talhoes','movimentos','precos','financeiro','contas','pedidos','ordens','producao','notas','usuarios']; // tudo que é apagado ao excluir a conta (usuarios por último)
-const TAB_MOD={ord:'ordens',ped:'estoque',mov:'estoque',est:'estoque',his:'estoque',fin:'financas',des:'financas',pro:'financas',pag:'financas'};
+const COLS_TODAS=['catalogo','talhoes','maquinas','movimentos','precos','financeiro','contas','pedidos','ordens','producao','notas','usuarios']; // tudo que é apagado ao excluir a conta (usuarios por último)
+const TAB_MOD={ord:'ordens',ped:'estoque',mov:'estoque',est:'estoque',his:'estoque',fin:'financas',des:'financas',pro:'financas',pag:'financas',maq:'maq'};
 function aplicaModulos(){
   document.querySelectorAll('.iaBtn').forEach(b=>b.classList.toggle('hide',!LIC.mod.ia));
   if(S.papel==='patrao'){
@@ -1111,6 +1155,7 @@ function iniciaPatrao(){
   escuta('ordens',s=>{S.Ord=lista(s);agenda(render);});
   escuta('producao',s=>{S.Pr=lista(s);agenda(render);});
   escuta('contas',s=>{S.CT=lista(s);agenda(render);});
+  escuta('maquinas',s=>{S.Mq=mapa(s);agenda(render);});
   if(!$('oItens').children.length)oAddItem();
   setG('insumos');}
 
@@ -1170,7 +1215,7 @@ function render(){
   keep('hQuem','<option value="">Todos</option>'+quem.map(([id,n])=>`<option value="${id}">${esc(n)}</option>`).join(''));
   $('cats').innerHTML=[...new Set(prods.map(p=>p.cat).filter(Boolean))].map(c=>`<option>${esc(c)}</option>`).join('');
   $('fcats').innerHTML=[...new Set(S.F.map(f=>f.cat).filter(Boolean))].map(c=>`<option>${esc(c)}</option>`).join('');
-  mostraSaldo();renderEst();renderFin();renderTal();renderHis();renderUsu();renderPedidos('pdPat');renderOrdens();renderDesp();renderProd();renderContas();
+  mostraSaldo();renderEst();renderFin();renderTal();renderHis();renderUsu();renderPedidos('pdPat');renderOrdens();renderDesp();renderProd();renderContas();renderMaq();
   $('info').textContent=`${prods.length} produtos · ${tals.length} talhões · ${S.M.length} movimentações · ${S.F.length} lançamentos financeiros`;}
 
 // --- movimentação
@@ -1406,6 +1451,77 @@ function renderContas(){
   $('cpSeries').innerHTML=SL.length?'<tr><th>Financiamento</th><th class="n">Pagas</th><th class="n">Já pago</th><th class="n">Falta pagar</th><th></th></tr>'+SL.map(x=>`<tr><td><b>${esc(x.c.desc)}</b><br><span class="muted">${x.n}× ${fm(x.c.val)}${x.c.fornecedor?' · '+esc(x.c.fornecedor):''} · ${cpOndeTxt(x.c)}${x.prox?' · próxima '+fd(x.prox.venc):' · ✔ quitado'}</span></td>
     <td class="n">${x.pg}/${x.n}</td><td class="n pos">${fm(x.pago)}</td><td class="n ${x.rest?'neg':''}">${fm(x.rest)}</td><td class="n">${x.rest?`<button class="btn sm sec" onclick="cpQuitar('${x.k}')">Quitar</button>`:''}</td></tr>`).join('')
     :'<tr><td class="muted">Nenhum financiamento cadastrado. Use "Financiamento / parcelado" acima (ex.: trator em 10 parcelas anuais).</td></tr>';}
+
+
+// ================= MÁQUINAS E ABASTECIMENTO =================
+// Cada abastecimento é uma despesa de combustível no financeiro (grupo comb) com a máquina, litros e preço/litro.
+const COMBS={diesel:'Diesel',gasolina:'Gasolina',etanol:'Etanol',arla:'Arla 32'};
+function maqsOrdenadas(){return Object.values(S.Mq||{}).sort((a,b)=>ord(a.nome,b.nome));}
+function abastecimentos(){return S.F.filter(f=>f.maq&&f.litros);}
+function abCalc(){const l=num($('abL').value),p=num($('abP').value);$('abTot').innerHTML=l&&p?`Total: <b>${fm(l*p)}</b>`:'';}
+function abSugere(soPreco){ // combustível da máquina e último preço pago por litro
+  const m=(S.Mq||{})[$('abMaq').value];if(!soPreco&&m&&m.comb)$('abComb').value=m.comb;
+  const ult=abastecimentos().filter(f=>f.comb===$('abComb').value).sort((a,b)=>(b.data+b.criadoEm).localeCompare(a.data+a.criadoEm))[0];
+  if(ult)$('abP').value=ult.precoL;abCalc();}
+function salvarAbast(){
+  const m=(S.Mq||{})[$('abMaq').value];if(!m){toast('Cadastre e escolha a máquina');return;}
+  const l=num($('abL').value),p=num($('abP').value);if(l<=0){toast('Informe os litros');return;}if(p<=0){toast('Informe o preço por litro');return;}
+  const onde=$('abOnde').value,comb=$('abComb').value,h=num($('abH').value),obs=$('abObs').value.trim();
+  const d={tipo:'D',grupo:'comb',cat:GR.comb.n,sub:COMBS[comb],val:+(l*p).toFixed(2),data:$('abData').value||hoje(),tal:onde&&onde!=='rateio'?onde:'',rateio:onde==='rateio',
+    desc:`${COMBS[comb]} ${fq(l)} L × ${fm(p)} · ${m.nome}`+(obs?' · '+obs:''),maq:m.id,maqNome:m.nome,litros:l,precoL:p,comb,horim:h||0,fornecedor:obs,criadoEm:Date.now()};
+  const b=db.batch();b.set(col('financeiro').doc(),d);gravar(b,`⛽ Abastecimento salvo: ${fq(l)} L · ${fm(d.val)}`);
+  ['abL','abH'].forEach(i=>$(i).value='');abCalc();}
+function salvarMaq(){
+  const nome=$('mqNome').value.trim();if(!nome){toast('Informe o nome da máquina');return;}
+  const id=$('mqId').value,b=db.batch();
+  b.set(id?col('maquinas').doc(id):col('maquinas').doc(),{nome,tipo:$('mqTipo').value,comb:$('mqComb').value,...(id?{}:{criadoEm:Date.now()})},{merge:true});
+  gravar(b,id?'Máquina atualizada ✔':'🚜 Máquina cadastrada ✔');cancelaMaq();}
+function editarMaq(id){const m=(S.Mq||{})[id];if(!m)return;$('mqForm').open=true;$('mqId').value=id;$('mqNome').value=m.nome;$('mqTipo').value=m.tipo||'Outro';$('mqComb').value=m.comb||'diesel';
+  $('mqBtn').textContent='Salvar alterações';$('mqCanc').classList.remove('hide');$('mqNome').focus();}
+function cancelaMaq(){$('mqId').value='';$('mqNome').value='';$('mqBtn').textContent='Salvar máquina';$('mqCanc').classList.add('hide');}
+function excluirMaq(id){const m=(S.Mq||{})[id];if(!m)return;const n=abastecimentos().filter(f=>f.maq===id).length;
+  if(!confirm(`Excluir a máquina "${m.nome}"?`+(n?`\n\nOs ${n} abastecimentos dela continuam nas despesas.`:'')))return;
+  const b=db.batch();b.delete(col('maquinas').doc(id));gravar(b,'Máquina excluída');}
+function renderMaq(){
+  if(!$('mqLista'))return;
+  const M=maqsOrdenadas(),A=abastecimentos(),ho=hoje();
+  const opC=Object.entries(COMBS).map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
+  if(!$('abComb').options.length){$('abComb').innerHTML=opC;$('mqComb').innerHTML=opC;}
+  if(!$('abData').value)$('abData').value=ho;
+  const keep=(id,html)=>{const v=$(id).value;$(id).innerHTML=html;if([...$(id).options].some(o=>o.value===v))$(id).value=v;return v;};
+  const antes=$('abMaq').value;
+  keep('abMaq',M.length?M.map(m=>`<option value="${m.id}">${esc(m.nome)}</option>`).join(''):'<option value="">— cadastre uma máquina abaixo —</option>');
+  if($('abMaq').value!==antes)abSugere();
+  keep('abOnde','<option value="">Despesa geral (não entra no custo dos talhões)</option><option value="rateio">↔ Ratear entre todos os talhões pela área</option>'+talhoesOrdenados().map(t=>`<option value="${t.id}">🌱 ${esc(t.nome)}</option>`).join(''));
+  keep('abFiltro','<option value="">Todas as máquinas</option>'+M.map(m=>`<option value="${m.id}">${esc(m.nome)}</option>`).join(''));
+  if(!M.length)$('mqForm').open=true;
+  // período
+  const per=$('mqPer').value,y=ho.slice(0,4),ini=per==='mes'?ho.slice(0,7)+'-01':per==='ano'?y+'-01-01':per==='12'?cpMaisMeses(ho,-12):'0000';
+  const AP=A.filter(f=>f.data>=ini);
+  const mes=A.filter(f=>f.data.startsWith(ho.slice(0,7)));
+  const lt=(l,c)=>l.filter(f=>!c||f.comb===c).reduce((s,f)=>s+f.litros,0),rs=l=>l.reduce((s,f)=>s+f.val,0);
+  const md=l=>{const x=l.filter(f=>f.comb==='diesel');const L=lt(x);return L?rs(x)/L:0;};
+  $('mqKpis').innerHTML=`<div class="kpi"><small>⛽ Combustível no mês</small><b class="neg">${fm(rs(mes))}</b><small>${fq(lt(mes))} litros</small></div>
+    <div class="kpi"><small>🛢️ Diesel no mês</small><b>${fq(lt(mes,'diesel'))} L</b><small>${md(mes)?'média '+fm(md(mes))+'/L':'—'}</small></div>
+    <div class="kpi"><small>⛽ Gasolina no mês</small><b>${fq(lt(mes,'gasolina'))} L</b><small>&nbsp;</small></div>
+    <div class="kpi"><small>🚜 Máquinas</small><b>${M.length}</b><small>${A.length} abastecimento(s)</small></div>`;
+  // por máquina
+  const consumo=id=>{const x=A.filter(f=>f.maq===id&&f.horim>0).sort((a,b)=>a.horim-b.horim);if(x.length<2)return'';
+    const horas=x[x.length-1].horim-x[0].horim,L=x.slice(1).reduce((s,f)=>s+f.litros,0);if(horas<=0)return'';
+    const m=(S.Mq||{})[id],km=m&&/Caminh|carro|Moto/.test(m.tipo||'');return km?`${fq(horas/L)} km/L`:`${fq(L/horas)} L/h`;};
+  const ultH=id=>{const x=A.filter(f=>f.maq===id&&f.horim>0).sort((a,b)=>b.horim-a.horim)[0];return x?fq(x.horim):'—';};
+  $('mqLista').innerHTML=M.length?'<tr><th>Máquina</th><th class="n">Litros</th><th class="n">Gasto</th><th class="n">Consumo</th><th class="n">Horím./km</th><th></th></tr>'+M.map(m=>{const x=AP.filter(f=>f.maq===m.id);
+    return`<tr><td><b>${esc(m.nome)}</b><br><span class="muted">${esc(m.tipo||'')} · ${COMBS[m.comb]||''}</span></td><td class="n">${fq(lt(x))}</td><td class="n neg">${fm(rs(x))}</td><td class="n">${consumo(m.id)||'<span class="muted">—</span>'}</td><td class="n">${ultH(m.id)}</td>
+      <td class="n" style="white-space:nowrap"><button class="btn sm sec" style="margin:0" onclick="editarMaq('${m.id}')">✎</button> <button class="btn sm sec" style="margin:0" onclick="excluirMaq('${m.id}')">🗑</button></td></tr>`;}).join('')
+    +`<tr><td><b>Total</b></td><td class="n"><b>${fq(lt(AP))}</b></td><td class="n neg"><b>${fm(rs(AP))}</b></td><td colspan="3"></td></tr>`
+    :'<tr><td class="muted">Nenhuma máquina cadastrada. Cadastre abaixo (trator, colheitadeira, caminhonete...).</td></tr>';
+  // histórico
+  const fm2=$('abFiltro').value,H=A.filter(f=>!fm2||f.maq===fm2).sort((a,b)=>(b.data+b.criadoEm).localeCompare(a.data+a.criadoEm)).slice(0,150);
+  const onde=f=>f.rateio?'↔ rateado':f.tal?'🌱 '+esc(talNome(f.tal)):'geral';
+  $('abLista').innerHTML=H.length?'<tr><th>Data</th><th>Máquina</th><th class="n">Litros</th><th class="n">R$/L</th><th class="n">Total</th><th></th></tr>'+H.map(f=>`<tr><td>${fd(f.data)}</td>
+    <td>${esc(((S.Mq||{})[f.maq]||{}).nome||f.maqNome||'')}<br><span class="muted">${COMBS[f.comb]||''} · ${onde(f)}${f.horim?' · horím. '+fq(f.horim):''}${f.fornecedor?' · '+esc(f.fornecedor):''}</span></td>
+    <td class="n">${fq(f.litros)}</td><td class="n">${fm(f.precoL)}</td><td class="n neg">${fm(f.val)}</td><td class="n"><button class="btn sm sec" style="margin:0" onclick="excluirFin('${f.id}')">🗑</button></td></tr>`).join('')
+    :'<tr><td class="muted">Nenhum abastecimento ainda.</td></tr>';}
 
 // --- produção por talhão
 const scDe=p=>p.un==='sc'?p.qtd:p.un==='kg'?p.qtd/60:p.qtd*1000/60;   // tudo em sacas de 60 kg
